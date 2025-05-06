@@ -3,7 +3,7 @@ class Garage {
   final String name;
   final int studentSpaces;
   final int studentMaxSpaces;
-  final double availablePercent; 
+  //final double availablePercent; 
   final double latitude;
   final double longitude;
 
@@ -12,7 +12,7 @@ class Garage {
     required this.name,
     required this.studentSpaces,
     required this.studentMaxSpaces,
-    required this.availablePercent,
+    //required this.availablePercent,
     required this.latitude,
     required this.longitude,
   });
@@ -26,7 +26,7 @@ class Garage {
       name: jsonData['name'] ?? '',
       studentSpaces: current,
       studentMaxSpaces: max,
-      availablePercent: (max > 0) ? (current / max * 100) : 0.0,
+      // availablePercent: (max > 0) ? (current / max * 100) : 0.0
       latitude: double.tryParse(jsonData['Latitude'] ?? '0') ?? 0.0,
       longitude: double.tryParse(jsonData['Longitude'] ?? '0') ?? 0.0,
     );

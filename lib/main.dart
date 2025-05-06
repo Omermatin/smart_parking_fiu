@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/homepage.dart';
+import 'models/garage.dart';
 
 void main() {
   runApp(const MyApp());
