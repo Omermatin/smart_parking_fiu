@@ -47,24 +47,41 @@ class _HomepageState extends State<Homepage> {
 
               const SizedBox(height: 100),
 
-              DropdownButton<int>(
-                value: selectedId,
-                hint: Text("Select your ID"),
-                items:
-                    ids
-                        .map(
-                          (id) => DropdownMenuItem<int>(
-                            value: id,
-                            child: Text(id.toString()),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedId = value;
-                  });
-                },
+              SizedBox(
+                child: Container(
+                  height: 50,
+                  color: Color(0xFF00205B),
+
+                  child: DropdownButton<int>(
+                    value: selectedId,
+                    hint: Text(
+                      "Select your ID",
+                      style: TextStyle(color: Colors.white),
+                    ),
+
+                    style: TextStyle(color: Colors.white),
+                    dropdownColor: Color(0xFF00205B),
+                    // isExpanded: true,
+                    iconEnabledColor: Colors.white,
+                    underline: SizedBox(),
+                    items:
+                        ids
+                            .map(
+                              (id) => DropdownMenuItem<int>(
+                                value: id,
+                                child: Text(id.toString()),
+                              ),
+                            )
+                            .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedId = value;
+                      });
+                    },
+                  ),
+                ),
               ),
+
               const SizedBox(height: 25),
               ElevatedButton(
                 onPressed: () {
@@ -73,7 +90,12 @@ class _HomepageState extends State<Homepage> {
                     // Call your API or navigate
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Please select an ID")),
+                      SnackBar(
+                        content: Text(
+                          "Please select an ID",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
                     );
                   }
                 },
