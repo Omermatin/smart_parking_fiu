@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'pages/homepage.dart';
 import 'models/garage.dart';
-import 'package:smart_parking_fiu/functions/data.dart';
+import 'package:smart_parking_fiu/util/data.dart';
 
 Future<void> main() async {
-  debugPrint('Getting JSON Data');
   await dotenv.load();
-  debugPrint('Laoding done');
-  runApp(const MyApp());
 
-  fetchUsers("4444444");
+  await fetchUsers("4444444");
+  await fetchParking();
+  debugPrint("OUSMAN BAH");
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

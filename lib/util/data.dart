@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
 
-Future<void> fetchUsers(String studentsIds) async {
+Future<dynamic> fetchUsers(String studentsIds) async {
   debugPrint('Getting JSON Data');
 
   final baseUrl = dotenv.env['API_URL_SCHEDULE'];
-  final apiKey = dotenv.env['API_KEY'];
+
+  if (baseUrl == null || dotenv.env['API_KEY'] == null) {
+    debugPrint('Environment variables not found');
+    return null;
+  }
+
   final fullUrl = '$baseUrl$studentsIds';
   final url = Uri.parse(fullUrl);
 
@@ -19,18 +25,33 @@ Future<void> fetchUsers(String studentsIds) async {
     final response = await http.get(url, headers: headers);
     debugPrint('Response status: ${response.statusCode}');
     debugPrint('Response body: ${response.body}');
+    return jsonDecode(response.body);
   } catch (e) {
     debugPrint('Fetch failed: $e');
+    return null;
   }
 }
 
-// void fetchParking(String apiUrlGarages) async {
-//   print("Getting JSON Data");
+Future<dynamic> fetchParking() async {
+  final fullUrl = dotenv.env['API_URL_PARKING'];
 
-//   final url = Uri.parse(apiUrlGarages);
+  if (fullUrl == null) {
+    throw Exception('API_URL_PARKING not found in environment variables.');
+  }
+  final url = Uri.parse(fullUrl!);
 
-//   final response = await http.get(url);
+  final headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': dotenv.env['API_KEY']!,
+  };
 
-//   print('Response status: ${response.statusCode}');
-//   print('Response body: ${response.body}');
-// }
+  try {
+    final response = await http.get(url, headers: headers);
+    debugPrint('Response status: ${response.statusCode}');
+    debugPrint('Response body: ${response.body}');
+    return jsonDecode(response.body);
+  } catch (e) {
+    debugPrint('Fetch failed: $e');
+    return null;
+  }
+}
