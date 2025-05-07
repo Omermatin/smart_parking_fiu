@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../util/data.dart';
+import '../models/garage.dart';
+import '../util/garage_parser.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -21,6 +24,9 @@ class _HomepageState extends State<Homepage> {
   ];
 
   int? selectedId;
+  bool isLoading = false;
+  String errorMessage = '';
+  List<Garage> garages = [];
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class _HomepageState extends State<Homepage> {
             children: [
               const SizedBox(height: 20),
               SizedBox(
-                height: 120, // adjust this as needed
+                height: 120,
                 child: Image.asset('images/fiualonetrans.png'),
               ),
               const SizedBox(height: 15),
@@ -44,35 +50,27 @@ class _HomepageState extends State<Homepage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 100),
-
               SizedBox(
+                height: 50,
                 child: Container(
-                  height: 50,
-                  color: Color(0xFF00205B),
-
+                  color: const Color(0xFF00205B),
                   child: DropdownButton<int>(
                     value: selectedId,
-                    hint: Text(
+                    hint: const Text(
                       "Select your ID",
                       style: TextStyle(color: Colors.white),
                     ),
-
-                    style: TextStyle(color: Colors.white),
-                    dropdownColor: Color(0xFF00205B),
-                    // isExpanded: true,
+                    style: const TextStyle(color: Colors.white),
+                    dropdownColor: const Color(0xFF00205B),
                     iconEnabledColor: Colors.white,
-                    underline: SizedBox(),
-                    items:
-                        ids
-                            .map(
-                              (id) => DropdownMenuItem<int>(
-                                value: id,
-                                child: Text(id.toString()),
-                              ),
-                            )
-                            .toList(),
+                    underline: const SizedBox(),
+                    items: ids.map((id) {
+                      return DropdownMenuItem<int>(
+                        value: id,
+                        child: Text(id.toString()),
+                      );
+                    }).toList(),
                     onChanged: (value) {
                       setState(() {
                         selectedId = value;
@@ -81,30 +79,86 @@ class _HomepageState extends State<Homepage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 25),
-              ElevatedButton(
-                onPressed: () {
-                  if (selectedId != null) {
-                    print("Selected ID: $selectedId");
-                    // Call your API or navigate
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "Please select an ID",
-                          style: TextStyle(color: Colors.white),
-                        ),
+              isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: () {
+                        if (selectedId != null) {
+                          fetchGarages();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Please select an ID",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text("Submit"),
+                    ),
+              const SizedBox(height: 25),
+              if (errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              if (garages.isNotEmpty)
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: garages.length,
+                  itemBuilder: (context, index) {
+                    final garage = garages[index];
+                    return ListTile(
+                      title: Text(garage.name),
+                      subtitle: Text(
+                        'Available: ${garage.studentSpaces}/${garage.studentMaxSpaces}',
                       ),
                     );
-                  }
-                },
-                child: Text("Submit"),
-              ),
+                  },
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// ✅ This function fetches garages and updates the UI
+  Future<void> fetchGarages() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+      garages = [];
+    });
+
+    try {
+      final parkingData = await fetchParking();
+      if (parkingData == null) {
+        setState(() {
+          errorMessage = "Failed to load garages.";
+        });
+        return;
+      }
+      garages = GarageParser.parseGarages(parkingData);
+      setState(() {
+        print(garages);
+        errorMessage = garages.isEmpty ? "No garages found." : '';
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error fetching garages: $e';
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 }

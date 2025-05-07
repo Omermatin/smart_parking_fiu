@@ -23,8 +23,8 @@ Future<dynamic> fetchUsers(String studentsIds) async {
 
   try {
     final response = await http.get(url, headers: headers);
-    debugPrint('Response status: ${response.statusCode}');
-    debugPrint('Response body: ${response.body}');
+   // debugPrint('Response status: ${response.statusCode}');
+    //debugPrint('Response body: ${response.body}');
     return jsonDecode(response.body);
   } catch (e) {
     debugPrint('Fetch failed: $e');
@@ -47,8 +47,8 @@ Future<dynamic> fetchParking() async {
 
   try {
     final response = await http.get(url, headers: headers);
-    debugPrint('Response status: ${response.statusCode}');
-    debugPrint('Response body: ${response.body}');
+  //  debugPrint('Response status: ${response.statusCode}');
+  //  debugPrint('Response body: ${response.body}');
     return jsonDecode(response.body);
   } catch (e) {
     debugPrint('Fetch failed: $e');

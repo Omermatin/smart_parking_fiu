@@ -31,4 +31,9 @@ class Garage {
       longitude: double.tryParse(jsonData['Longitude'] ?? '0') ?? 0.0,
     );
   }
+  @override
+  String toString(){
+    return 'Garage(name: $name, Available: $studentSpaces/$studentMaxSpaces, '
+           'Location: ($latitude, $longitude))';
+  }
 }
