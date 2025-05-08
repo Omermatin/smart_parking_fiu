@@ -7,7 +7,7 @@ class Garage {
   final double latitude;
   final double longitude;
 
-  Garage({
+  const Garage({
     required this.type,
     required this.name,
     required this.studentSpaces,
