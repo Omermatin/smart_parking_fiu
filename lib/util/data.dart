@@ -23,11 +23,11 @@ Future<dynamic> fetchUsers(String studentsIds) async {
 
   try {
     final response = await http.get(url, headers: headers);
-   // debugPrint('Response status: ${response.statusCode}');
+    // debugPrint('Response status: ${response.statusCode}');
     //debugPrint('Response body: ${response.body}');
     return jsonDecode(response.body);
   } catch (e) {
-    debugPrint('Fetch failed: $e');
+    // debugPrint('Fetch failed: $e');
     return null;
   }
 }
@@ -47,11 +47,32 @@ Future<dynamic> fetchParking() async {
 
   try {
     final response = await http.get(url, headers: headers);
-  //  debugPrint('Response status: ${response.statusCode}');
-  //  debugPrint('Response body: ${response.body}');
+    //  debugPrint('Response status: ${response.statusCode}');
+    //  debugPrint('Response body: ${response.body}');
     return jsonDecode(response.body);
   } catch (e) {
-    debugPrint('Fetch failed: $e');
+    // debugPrint('Fetch failed: $e');
+    return null;
+  }
+}
+
+Future<dynamic> fetchBuilding() async {
+  final fullUrl = dotenv.env['API_URL_BUILDINGS'];
+
+  final url = Uri.parse(fullUrl!);
+
+  final headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': dotenv.env['API_KEY']!,
+  };
+
+  try {
+    final response = await http.get(url, headers: headers);
+    // debugPrint('Response status: ${response.statusCode}');
+    // debugPrint('Response body: ${response.body}');
+    return jsonDecode(response.body);
+  } catch (e) {
+    // debugPrint('Fetch failed: $e');
     return null;
   }
 }
