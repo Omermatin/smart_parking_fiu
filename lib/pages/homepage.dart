@@ -53,16 +53,14 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    // Responsive padding based on screen size
-    double screenWidth = MediaQuery.of(context).size.width;
-    double padding = screenWidth > 600 ? 40.0 : 20.0;
-
+    
     return Scaffold(
+      backgroundColor:  const Color.fromRGBO(239,239,239,1),
       body: GestureDetector(
         // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.all(30),
           children: [
             const SizedBox(height: 20),
             SizedBox(
@@ -89,6 +87,9 @@ class _HomepageState extends State<Homepage> {
                 controller: idController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+
                   labelText: "Enter Your Student ID",
                   labelStyle: TextStyle(color: AppColors.primary),
                   hintText: "e.g. 1111111",
@@ -162,23 +163,13 @@ class _HomepageState extends State<Homepage> {
     }
 
     final enteredId = idController.text.trim();
-
-    // Check if ID is in valid list using our helper method
-    debugPrint("Validating ID: '$enteredId'");
-
+    
     if (!isValidPantherId(enteredId)) {
-      // For testing/debugging, let's try to bypass this validation temporarily
-      // REMOVE THIS FOR PRODUCTION - just for testing if the rest of the flow works
-      debugPrint("WARNING: ID validation bypassed for testing");
-
-      // Comment this section out if you want to test the rest of the flow
       setState(() {
         errorMessage = "Invalid Panther ID. Please enter a valid ID.";
       });
       return;
-
-      // Uncomment the line below to bypass validation for testing
-      // debugPrint("Bypassing ID validation for testing");
+      
     }
 
     // Clear error and show loading

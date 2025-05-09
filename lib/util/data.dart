@@ -38,7 +38,7 @@ Future<dynamic> fetchParking() async {
   if (fullUrl == null) {
     throw Exception('API_URL_PARKING not found in environment variables.');
   }
-  final url = Uri.parse(fullUrl!);
+  final url = Uri.parse(fullUrl);
 
   final headers = {
     'Content-Type': 'application/json',
