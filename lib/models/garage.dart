@@ -6,8 +6,9 @@ class Garage {
   //final double availablePercent; 
   final double latitude;
   final double longitude;
+  double score = 0;
 
-  const Garage({
+  Garage({
     required this.type,
     required this.name,
     required this.studentSpaces,

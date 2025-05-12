@@ -1,7 +1,7 @@
 // lib/util/building_parser.dart
 import 'package:flutter/material.dart';
 import '../models/building.dart';
-import './data.dart';
+import '../services/api_service.dart';
 
 List<Building>? _cachedBuildings;
 

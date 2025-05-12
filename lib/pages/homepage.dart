@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../util/data.dart';
+import '../services/api_service.dart';
 import '../models/garage.dart';
 import '../util/garage_parser.dart';
+import '../util/class_schedule_parser.dart';
+import '../util/building_parser.dart';
+import '../models/building.dart';
+import '../services/garage_service.dart';
 
 // Color constants to avoid hardcoding
 class AppColors {
@@ -24,17 +28,10 @@ class _HomepageState extends State<Homepage> {
 
   // Added a method to check ID validity instead of relying on direct list comparison
   final List<String> validPantherIds = [
-    '1111111',
-    '2222222',
-    '3333333',
-    '4444444',
-    '5555555',
-    '6666666',
-    '7777777',
-    '8888888',
-    '9999999',
+    '1111111', '2222222', '3333333', '4444444', '5555555',
+    '6666666', '7777777', '8888888', '9999999',
   ];
-
+  
   // Helper method to check if an ID is valid
   bool isValidPantherId(String id) {
     return validPantherIds.contains(id.trim());
@@ -55,7 +52,7 @@ class _HomepageState extends State<Homepage> {
   Widget build(BuildContext context) {
     
     return Scaffold(
-      backgroundColor:  const Color.fromRGBO(239,239,239,1),
+      backgroundColor: const Color.fromRGBO(239,239,239,1),
       body: GestureDetector(
         // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
@@ -78,7 +75,7 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
             const SizedBox(height: 100),
-
+            
             // Form with validation
             Form(
               key: _formKey,
@@ -89,7 +86,6 @@ class _HomepageState extends State<Homepage> {
                 decoration: const InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
-
                   labelText: "Enter Your Student ID",
                   labelStyle: TextStyle(color: AppColors.primary),
                   hintText: "e.g. 1111111",
@@ -99,34 +95,43 @@ class _HomepageState extends State<Homepage> {
                   ),
                   semanticCounterText: "Enter your 7-digit Panther ID number",
                 ),
+                // Unified validation - handles both format and valid ID checks
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Please enter your Student ID";
                   } else if (!RegExp(r'^\d+$').hasMatch(value)) {
                     return "ID must be numeric";
+                  } else if (!isValidPantherId(value)) {
+                    return "Invalid Panther ID. Please enter a valid ID.";
                   }
                   return null;
                 },
+                // Clear the previous error on change
+                onChanged: (_) {
+                  setState(() {
+                    errorMessage = '';
+                  });
+                },
               ),
             ),
-
+            
             const SizedBox(height: 25),
 
             // Submit Button with loading state
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
-                  onPressed: validateAndFetchGarages,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.background,
+                    onPressed: validateAndLoadGarages,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.background,
+                    ),
+                    child: const Text("Submit"),
                   ),
-                  child: const Text("Submit"),
-                ),
-
+                  
             const SizedBox(height: 25),
 
-            // Error Message Display
+            // Error Message Display - for network/API errors
             if (errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -152,85 +157,39 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  // Extracted the validation logic to avoid duplication
-  void validateAndFetchGarages() async {
-    // Unfocus keyboard
-    FocusScope.of(context).unfocus();
+  // Refactored validation and data fetching method
+void validateAndLoadGarages() async {
+  setState(() {
+    errorMessage = '';
+    isLoading = true;
+  });
 
-    // Validate form first
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  final enteredId = idController.text.trim();
+  
+  try {
+    // Use the GarageService for clean logic
+    garages = await GarageService.validateAndFetchGarages(enteredId);
 
-    final enteredId = idController.text.trim();
-    
-    if (!isValidPantherId(enteredId)) {
-      setState(() {
-        errorMessage = "Invalid Panther ID. Please enter a valid ID.";
-      });
-      return;
-      
-    }
-
-    // Clear error and show loading
     setState(() {
-      errorMessage = '';
-      isLoading = true;
+      errorMessage = garages.isEmpty ? "No garages found." : '';
     });
-
-    try {
-      // Fetch data
-      await fetchUsers(enteredId);
-      await fetchGarages();
-      debugPrint("User data and garages fetched successfully");
-    } catch (e) {
-      setState(() {
-        errorMessage = "Error fetching data: $e";
-      });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  // Added missing method implementation
-  Future<void> fetchUsers(String pantherId) async {
-    // Implementation should fetch user data based on the pantherId
-    // This is a placeholder - replace with actual implementation
-    await Future.delayed(const Duration(milliseconds: 500));
-    // Add your user fetching logic here
-  }
-
-  // Improved with single setState call for better performance
-  Future<void> fetchGarages() async {
-    try {
-      final parkingData = await fetchParking();
-
-      setState(() {
-        if (parkingData == null) {
-          errorMessage = "Failed to load garages.";
-          garages = [];
-        } else {
-          garages = GarageParser.parseGarages(parkingData);
-          errorMessage = garages.isEmpty ? "No garages found." : '';
-        }
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Error fetching garages: $e';
-        garages = [];
-      });
-    }
+  } catch (e) {
+    setState(() {
+      errorMessage = e.toString();
+    });
+  } finally {
+    setState(() {
+      isLoading = false;
+    });
   }
 }
-
-// Extracted widget for better reusability
+}
+// Garage List Item Widget
 class GarageListItem extends StatelessWidget {
   final Garage garage;
-
+  
   const GarageListItem({required this.garage, Key? key}) : super(key: key);
-
+  
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -238,16 +197,15 @@ class GarageListItem extends StatelessWidget {
       child: ListTile(
         title: Text(
           garage.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17,),
         ),
         subtitle: Text(
           'Available: ${garage.studentSpaces}/${garage.studentMaxSpaces}',
         ),
         trailing: CircularProgressIndicator(
-          value:
-              garage.studentMaxSpaces > 0
-                  ? garage.studentSpaces / garage.studentMaxSpaces
-                  : 0,
+          value: garage.studentMaxSpaces > 0 
+              ? garage.studentSpaces / garage.studentMaxSpaces 
+              : 0,
           backgroundColor: Colors.grey[300],
           valueColor: AlwaysStoppedAnimation<Color>(
             _getColorBasedOnAvailability(garage),
@@ -256,14 +214,13 @@ class GarageListItem extends StatelessWidget {
       ),
     );
   }
-
+  
   // Helper method to determine color based on availability
   Color _getColorBasedOnAvailability(Garage garage) {
-    final availability =
-        garage.studentMaxSpaces > 0
-            ? garage.studentSpaces / garage.studentMaxSpaces
-            : 0;
-
+    final availability = garage.studentMaxSpaces > 0 
+        ? garage.studentSpaces / garage.studentMaxSpaces 
+        : 0;
+    
     if (availability > 0.5) return Colors.green;
     if (availability > 0.2) return Colors.orange;
     return Colors.red;

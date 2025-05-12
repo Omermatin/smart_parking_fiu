@@ -1,9 +1,9 @@
+// parsers/class_schedule_parser.dart
 import '../models/class_schedule.dart';
-
 class ClassScheduleParser {
-  static List<ClassSchedule> parseClasses(Map<String, dynamic> studentJson) {
-    final List<ClassSchedule> classList = [];
-    final DateTime now = DateTime.now();
+  static ClassSchedule? getCurrentOrUpcomingClass(Map<String, dynamic> studentJson) {
+    final now = DateTime.now();
+    ClassSchedule? nextClass;
 
     final terms = studentJson['terms'] as List<dynamic>;
 
@@ -12,44 +12,61 @@ class ClassScheduleParser {
 
       for (var classItem in classes) {
         final meetings = classItem['meetings'] as List<dynamic>;
-        final firstMeeting = meetings.isNotEmpty ? meetings.first : {};
 
-        final modality = (classItem['modality'] ?? '').toString().toLowerCase();
-        final today = firstMeeting['today']?.toString().toLowerCase() == 'true';
+        // Only consider meetings marked as "today": "true"
+        final validMeetings = meetings.where((meeting) =>
+            meeting['today']?.toString().toLowerCase() == 'true').toList();
+        
+        if (validMeetings.isEmpty) continue; // Skip if no valid meetings for today
 
-        // Parse and compare end time
-        final endTimeStr = firstMeeting['meetingTimeEnd'] ?? '';
-        final endTime = _parseTime(endTimeStr);
+        for (var meeting in validMeetings) {
+          final startTimeStr = meeting['meetingTimeStart'] ?? '';
+          final endTimeStr = meeting['meetingTimeEnd'] ?? '';
 
-        // Filter out invalid classes
-        // if (!today ||
-        //     modality == 'online' ||
-        //     (endTime != null && endTime.isBefore(now))) {
-        //   continue;
-        // }
+          final startTime = _parseTime(startTimeStr);
+          final endTime = _parseTime(endTimeStr);
 
-        classList.add(
-          ClassSchedule(
+          // Create a temporary class object with only the relevant meeting
+          final temporaryClass = ClassSchedule(
             courseName: classItem['courseName'] ?? '',
-            meetingTimeStart: firstMeeting['meetingTimeStart'] ?? '',
-            meetingTimeEnd: firstMeeting['meetingTimeEnd'] ?? '',
-            buildingCode: firstMeeting['buildingCode'] ?? '',
+            meetingTimeStart: startTimeStr,
+            meetingTimeEnd: endTimeStr,
+            buildingCode: meeting['buildingCode'] ?? '',
             mode: classItem['modality'] ?? '',
             subject: classItem['subject'] ?? '',
             catalogNumber: classItem['catalogNumber'] ?? '',
             classSection: classItem['classSection'] ?? '',
-            meetingDays: firstMeeting['meetingDays'] ?? '',
-            today: today ? 'true' : 'false',
-          ),
-        );
+            meetingDays: meeting['meetingDays'] ?? '',
+            today: meeting['today']?.toString().toLowerCase() == 'true' ? 'true' : 'false',
+          );
+
+          // If the class is ongoing, we immediately return it
+          if (startTime != null && endTime != null) {
+            if (now.isAfter(startTime) && now.isBefore(endTime)) {
+              return temporaryClass; // Ongoing class with valid meeting
+            }
+
+            // If not ongoing, but it is upcoming
+            if (now.isBefore(startTime)) {
+              if (nextClass == null || 
+                  _parseTime(nextClass.meetingTimeStart)!.isAfter(startTime)) {
+                nextClass = temporaryClass;
+              }
+            }
+          }
+        }
       }
     }
 
-    return classList;
+    // If no ongoing class is found, return the next upcoming class
+    return nextClass; // This will be null if no upcoming classes exist
   }
 
+  // Private method for parsing time
   static DateTime? _parseTime(String timeStr) {
-    final match = RegExp(r'^(\d+):(\d+)(AM|PM)$').firstMatch(timeStr.trim());
+    if (timeStr.isEmpty) return null;
+    
+    final match = RegExp(r'^(\d{1,2}):(\d{2})(AM|PM)$').firstMatch(timeStr.trim());
     if (match == null) return null;
 
     int hour = int.parse(match.group(1)!);
