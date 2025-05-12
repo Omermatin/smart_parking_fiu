@@ -5,7 +5,6 @@ import '../util/garage_parser.dart';
 import '../util/class_schedule_parser.dart';
 import '../util/building_parser.dart';
 import '../models/building.dart';
-import '../services/garage_service.dart';
 
 // Color constants to avoid hardcoding
 class AppColors {
@@ -121,7 +120,7 @@ class _HomepageState extends State<Homepage> {
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
-                    onPressed: validateAndLoadGarages,
+                    onPressed: validateAndFetchGarages,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.background,
@@ -158,32 +157,62 @@ class _HomepageState extends State<Homepage> {
   }
 
   // Refactored validation and data fetching method
-void validateAndLoadGarages() async {
-  setState(() {
-    errorMessage = '';
-    isLoading = true;
-  });
+  void validateAndFetchGarages() async {
+    setState(() {
+      errorMessage = '';
+    });
+    
+    // Unfocus keyboard
+    FocusScope.of(context).unfocus();
+    
+    // Validate form first - this handles both format and valid ID checks
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    final enteredId = idController.text.trim();
+    
+    // Set loading state
+    setState(() {
+      isLoading = true;
+    });
 
-  final enteredId = idController.text.trim();
+    try {
   
-  try {
-    // Use the GarageService for clean logic
-    garages = await GarageService.validateAndFetchGarages(enteredId);
-
-    setState(() {
-      errorMessage = garages.isEmpty ? "No garages found." : '';
-    });
-  } catch (e) {
-    setState(() {
-      errorMessage = e.toString();
-    });
-  } finally {
-    setState(() {
-      isLoading = false;
-    });
+      final userData = await fetchUsers(enteredId);
+      if (userData == null) {
+        setState(() {
+          errorMessage = "Failed to fetch user data.";
+          isLoading = false;
+        });
+        return;
+      }
+      final parkingData = await fetchParking();
+      if (parkingData == null) {
+        setState(() {
+          errorMessage = "Failed to load garages.";
+          garages = [];
+          isLoading = false;
+        });
+        return;
+      }
+      garages = GarageParser.parseGarages(parkingData);
+      // Process garage data
+      setState(() {
+        errorMessage = garages.isEmpty ? "No garages found." : '';
+        isLoading = false;
+      });
+      
+      debugPrint("User data and garages fetched successfully");
+    } catch (e) {
+      setState(() {
+        errorMessage = "Error fetching data: $e";
+        isLoading = false;
+      });
+    }
   }
 }
-}
+
 // Garage List Item Widget
 class GarageListItem extends StatelessWidget {
   final Garage garage;
