@@ -22,6 +22,7 @@ class BuildingParser {
   }
 }
 
+// Keep this to fetch and cache buildings
 Future<List<Building>> getAllMMCBuildings() async {
   if (_cachedBuildings != null) {
     debugPrint('Returning cached buildings');
@@ -36,7 +37,14 @@ Future<List<Building>> getAllMMCBuildings() async {
   return _cachedBuildings!;
 }
 
-Future<List<Building>> refreshMMCBuildings() async {
-  _cachedBuildings = null;
-  return getAllMMCBuildings();
+// This gets a single building by its code (e.g., "PG6")
+Future<Building?> getBuildingByCode(String buildingCode) async {
+  final buildings = await getAllMMCBuildings();
+  try {
+    return buildings.firstWhere(
+      (b) => b.name.toUpperCase() == buildingCode.toUpperCase(),
+    );
+  } catch (e) {
+    return null;
+  }
 }

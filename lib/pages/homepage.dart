@@ -27,10 +27,17 @@ class _HomepageState extends State<Homepage> {
 
   // Added a method to check ID validity instead of relying on direct list comparison
   final List<String> validPantherIds = [
-    '1111111', '2222222', '3333333', '4444444', '5555555',
-    '6666666', '7777777', '8888888', '9999999',
+    '1111111',
+    '2222222',
+    '3333333',
+    '4444444',
+    '5555555',
+    '6666666',
+    '7777777',
+    '8888888',
+    '9999999',
   ];
-  
+
   // Helper method to check if an ID is valid
   bool isValidPantherId(String id) {
     return validPantherIds.contains(id.trim());
@@ -49,9 +56,8 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(239,239,239,1),
+      backgroundColor: const Color.fromRGBO(239, 239, 239, 1),
       body: GestureDetector(
         // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
@@ -74,7 +80,7 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
             const SizedBox(height: 100),
-            
+
             // Form with validation
             Form(
               key: _formKey,
@@ -113,21 +119,21 @@ class _HomepageState extends State<Homepage> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 25),
 
             // Submit Button with loading state
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
-                    onPressed: validateAndFetchGarages,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.background,
-                    ),
-                    child: const Text("Submit"),
+                  onPressed: validateAndFetchGarages,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.background,
                   ),
-                  
+                  child: const Text("Submit"),
+                ),
+
             const SizedBox(height: 25),
 
             // Error Message Display - for network/API errors
@@ -161,24 +167,23 @@ class _HomepageState extends State<Homepage> {
     setState(() {
       errorMessage = '';
     });
-    
+
     // Unfocus keyboard
     FocusScope.of(context).unfocus();
-    
+
     // Validate form first - this handles both format and valid ID checks
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     final enteredId = idController.text.trim();
-    
+
     // Set loading state
     setState(() {
       isLoading = true;
     });
 
     try {
-  
       final userData = await fetchUsers(enteredId);
       if (userData == null) {
         setState(() {
@@ -202,7 +207,7 @@ class _HomepageState extends State<Homepage> {
         errorMessage = garages.isEmpty ? "No garages found." : '';
         isLoading = false;
       });
-      
+
       debugPrint("User data and garages fetched successfully");
     } catch (e) {
       setState(() {
@@ -216,9 +221,9 @@ class _HomepageState extends State<Homepage> {
 // Garage List Item Widget
 class GarageListItem extends StatelessWidget {
   final Garage garage;
-  
+
   const GarageListItem({required this.garage, Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -226,15 +231,16 @@ class GarageListItem extends StatelessWidget {
       child: ListTile(
         title: Text(
           garage.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17,),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
         ),
         subtitle: Text(
           'Available: ${garage.studentSpaces}/${garage.studentMaxSpaces}',
         ),
         trailing: CircularProgressIndicator(
-          value: garage.studentMaxSpaces > 0 
-              ? garage.studentSpaces / garage.studentMaxSpaces 
-              : 0,
+          value:
+              garage.studentMaxSpaces > 0
+                  ? garage.studentSpaces / garage.studentMaxSpaces
+                  : 0,
           backgroundColor: Colors.grey[300],
           valueColor: AlwaysStoppedAnimation<Color>(
             _getColorBasedOnAvailability(garage),
@@ -243,13 +249,14 @@ class GarageListItem extends StatelessWidget {
       ),
     );
   }
-  
+
   // Helper method to determine color based on availability
   Color _getColorBasedOnAvailability(Garage garage) {
-    final availability = garage.studentMaxSpaces > 0 
-        ? garage.studentSpaces / garage.studentMaxSpaces 
-        : 0;
-    
+    final availability =
+        garage.studentMaxSpaces > 0
+            ? garage.studentSpaces / garage.studentMaxSpaces
+            : 0;
+
     if (availability > 0.5) return Colors.green;
     if (availability > 0.2) return Colors.orange;
     return Colors.red;
