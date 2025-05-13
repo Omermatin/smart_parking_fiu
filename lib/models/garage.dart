@@ -3,11 +3,15 @@ class Garage {
   final String name;
   final int studentSpaces;
   final int studentMaxSpaces;
-  //final double availablePercent; 
+  //final double availablePercent;
   final double latitude;
   final double longitude;
+  // double score = 0;
+  double? availableSpaces;
+  double? distanceToClass;
+  double? distanceFromOrigin;
 
-  const Garage({
+  Garage({
     required this.type,
     required this.name,
     required this.studentSpaces,
@@ -15,6 +19,9 @@ class Garage {
     //required this.availablePercent,
     required this.latitude,
     required this.longitude,
+    this.availableSpaces,
+    this.distanceToClass,
+    this.distanceFromOrigin,
   });
 
   factory Garage.fromJson(Map<String, dynamic> jsonData) {
@@ -32,8 +39,8 @@ class Garage {
     );
   }
   @override
-  String toString(){
+  String toString() {
     return 'Garage(name: $name, Available: $studentSpaces/$studentMaxSpaces, '
-           'Location: ($latitude, $longitude))';
+        'Location: ($latitude, $longitude))';
   }
 }
