@@ -7,13 +7,15 @@ import 'package:smart_parking_fiu/util/data.dart';
 import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
 import 'package:smart_parking_fiu/util/building_parser.dart';
 import 'package:smart_parking_fiu/models/building.dart'; // Add this
+import 'util/logic.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+  await LocationService.initializeUserLocation();
+  debugPrint("Location : ${LocationService.currentPosition}");
   runApp(const MyApp());
   // Ensure Flutter is initialized before async operations
-  WidgetsFlutterBinding.ensureInitialized();
-
   try {
     await dotenv.load();
     await fetchParking();

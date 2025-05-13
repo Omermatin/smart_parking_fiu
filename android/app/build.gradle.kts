@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.smart_parking_fiu"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
