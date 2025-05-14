@@ -10,6 +10,7 @@ import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
 import 'package:smart_parking_fiu/util/building_parser.dart';
 import 'package:smart_parking_fiu/util/garage_parser.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 
 class LocationService {
   static Position? _currentPosition;
@@ -18,9 +19,11 @@ class LocationService {
   static Future<void> initializeUserLocation() async {
     try {
       _currentPosition = await _determinePosition();
-      debugPrint("User Location Initialized: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}");
+      debugPrint(
+        "User Location Initialized: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}",
+      );
     } catch (e) {
-      print("Error initializing location: $e");
+      debugPrint("Error initializing location: $e");
       _currentPosition = null;
     }
   }
@@ -57,11 +60,10 @@ class LocationService {
   static Position? get currentPosition => _currentPosition;
 }
 
-
 double _degToRad(double deg) => deg * (pi / 180);
 
 double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  const double radius = 3958.8; // in miles
+  const double radius = 3963.1; // in miles
   double dLat = _degToRad(lat2 - lat1);
   double dLon = _degToRad(lon2 - lon1);
   double a =
@@ -72,7 +74,7 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
 }
 
 double calculateAvailability(Garage garage) {
-  return (garage.studentMaxSpaces - garage.studentSpaces).toDouble();
+  return garage.studentSpaces.toDouble();
 }
 
 void updateGaragesWithMetrics(
@@ -90,7 +92,6 @@ void updateGaragesWithMetrics(
     );
 
     garage.availableSpaces = calculateAvailability(garage);
-    debugPrint("Distance: ${garage.distanceFromOrigin}");
 
     garage.distanceFromOrigin = calculateDistance(
       originLat,
@@ -98,92 +99,98 @@ void updateGaragesWithMetrics(
       garage.latitude,
       garage.longitude,
     );
-    debugPrint("Distance: ${garage.distanceFromOrigin}");
   }
 }
 
 List<Garage> sortGarages(List<Garage> garages) {
   // Constants for threshold distances (in miles)
-  const double classDistanceThreshold = 0.2; // When distances to class are considered "trivially close"
-  const double originDistanceThreshold = 0.2; // When distances from origin are considered "trivially close"
+  const double classDistanceThreshold =
+      0.2; // When distances to class are considered "trivially close"
+  const double originDistanceThreshold =
+      0.3; // When distances from origin are considered "trivially close"
+
+  // Filter out garages with missing data
+  final filteredGarages =
+      garages.where((garage) {
+        return garage.distanceToClass != null &&
+            garage.distanceFromOrigin != null &&
+            garage.availableSpaces != null;
+      }).toList();
 
   // Sort the garages according to the prioritized scheme
-  garages.sort((a, b) {
+  filteredGarages.sort((a, b) {
     // PRIORITY 1: Distance to class (primary factor)
     final classDiff = (a.distanceToClass! - b.distanceToClass!).abs();
     if (classDiff > classDistanceThreshold) {
       // If difference is significant, sort by closest to class
       return a.distanceToClass!.compareTo(b.distanceToClass!);
     }
-    
+
     // PRIORITY 2: Distance from origin (secondary factor, when class distances are close)
     final originDiff = (a.distanceFromOrigin! - b.distanceFromOrigin!).abs();
     if (originDiff > originDistanceThreshold) {
       // If difference is significant, sort by closest from origin
       return a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!);
     }
-    
+
     // PRIORITY 3: Available spaces (when both distances are trivially close)
     // Higher available spaces is better, so reverse the comparison
     return b.availableSpaces!.compareTo(a.availableSpaces!);
   });
 
-  // Debug log sorted results
-  for (var garage in garages) {
-    debugPrint('Garage: ${garage.name}');
-    debugPrint('  Class Distance: ${garage.distanceToClass?.toStringAsFixed(2)} mi');
-    debugPrint('  Origin Distance: ${garage.distanceFromOrigin?.toStringAsFixed(2)} mi');
-    debugPrint('  Available Spaces: ${garage.availableSpaces?.toInt()}');
-  }
-
-  return garages;
+  return filteredGarages;
 }
 
-Future<dynamic> recommendations(
+Future<List<Garage>> recommendations(
   String pantherid,
   double longitude,
   double latitude,
 ) async {
-  await dotenv.load();
+  // Load environment variables if needed
+  if (dotenv.env.isEmpty) {
+    await dotenv.load();
+  }
 
-  List<dynamic> results = await fetchParking();
-
-  List<Garage> availableGarages = GarageParser.parseGarages(results);
-
-  Map<String, dynamic> classJson = await fetchUsers(pantherid);
-
-  ClassSchedule? classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
-    classJson,
-  );
-
-  String classCode = classSchedule?.buildingCode ?? "No building code";
-
-  Building? building = await getBuildingByCode(classCode);
-
-  // Add longitude and latitude in the updateGarageWithMetrics call
-  if (building != null) {
-    updateGaragesWithMetrics(availableGarages, building, longitude, latitude);
-
-    List<Garage> sorted = sortGarages(availableGarages);
-
-    for (var g in availableGarages) {
-      debugPrint(
-        '${g.name} — Distance to Class: ${g.distanceToClass}, Distance from Origin: ${g.distanceFromOrigin}, Spaces: ${g.availableSpaces}',
-      );
-    }
-    for (var garage in sorted) {
-      debugPrint("Garage: ${garage.name}");
-      debugPrint(
-        "  Distance: ${garage.distanceToClass?.toStringAsFixed(2)} mi",
-      );
-      debugPrint("  Spaces: ${garage.availableSpaces?.toInt()}");
-      debugPrint(
-        "  Distance from Home: ${garage.distanceFromOrigin?.toStringAsFixed(2)} mi",
-      );
-    }
-    return sorted;
-  } else {
-    debugPrint("Building not found.");
+  // Fetch parking data
+  final results = await fetchParking();
+  if (results == null) {
+    debugPrint("Failed to fetch parking data");
     return [];
   }
+
+  // Parse garages
+  final availableGarages = GarageParser.parseGarages(results);
+
+  // Fetch user schedule
+  final classJson = await fetchUsers(pantherid);
+  if (classJson == null) {
+    debugPrint("Failed to fetch class schedule");
+    return availableGarages;
+  }
+
+  // Get current or upcoming class
+  final classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
+    classJson,
+  );
+  final classCode = classSchedule?.buildingCode ?? "No building code";
+
+  // Find building for the class
+  final building = await getBuildingByCode(classCode);
+  if (building == null) {
+    debugPrint("Building not found for class code: $classCode");
+    return availableGarages;
+  }
+
+  // Update metrics and sort garages
+  updateGaragesWithMetrics(availableGarages, building, latitude, longitude);
+
+  // Use compute for sorting to avoid UI jank
+  final sorted = await compute(sortGarages, availableGarages);
+
+  return sorted;
+}
+
+// Wrapper for compute to run sorting off the main thread
+Future<List<Garage>> computeSortGarages(List<Garage> garages) {
+  return compute(sortGarages, garages);
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../models/garage.dart';
 import '../util/garage_parser.dart';
@@ -63,7 +64,7 @@ class _HomepageState extends State<Homepage> {
         // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           children: [
             const SizedBox(height: 20),
             SizedBox(
@@ -148,47 +149,51 @@ class _HomepageState extends State<Homepage> {
               ),
 
             // Garage List Display
-            if (garages.isNotEmpty)
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: garages.length,
-                itemBuilder: (context, index) {
-                  return GarageListItem(garage: garages[index]);
-                },
-              ),
+            if (garages.isNotEmpty) _buildGarageList(),
           ],
         ),
       ),
     );
   }
 
-  // Refactored validation and data fetching method
+  // Extracted garage list into a separate method
+  Widget _buildGarageList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: garages.length,
+      itemBuilder: (context, index) {
+        // Avoid recalculating values within the build method
+        return GarageListItem(garage: garages[index]);
+      },
+    );
+  }
+
+  // Refactored validation and data fetching method with compute
   void validateAndFetchGarages() async {
     setState(() {
       errorMessage = '';
     });
-    
+
     // Unfocus keyboard
     FocusScope.of(context).unfocus();
-    
+
     // Validate form first - this handles both format and valid ID checks
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     final enteredId = idController.text.trim();
-    
+
     // Set loading state
     setState(() {
       isLoading = true;
     });
 
     try {
-      // Use the recommendations function that already handles all the logic
+      // Get position outside of setState
       final userPosition = LocationService.currentPosition;
-      debugPrint("position: ${userPosition}");
-      
+
       if (userPosition == null) {
         setState(() {
           errorMessage = "Location services not available";
@@ -196,31 +201,33 @@ class _HomepageState extends State<Homepage> {
         });
         return;
       }
-      
+
+      // Call recommendations directly - Flutter services can't be used in compute
       final result = await recommendations(
         enteredId,
         userPosition.longitude,
-        userPosition.latitude
+        userPosition.latitude,
       );
-      
-      if (result is List) {
+
+      // Update UI after computation is complete
+      if (mounted) {
         setState(() {
-          garages = result.cast<Garage>();
-          errorMessage = garages.isEmpty ? "No suitable garages found." : '';
-          isLoading = false;
-        });
-        debugPrint("Recommendations fetched successfully: ${garages.length} garages");
-      } else {
-        setState(() {
-          errorMessage = "Failed to get recommendations";
+          if (result is List) {
+            garages = result.cast<Garage>();
+            errorMessage = garages.isEmpty ? "No suitable garages found." : '';
+          } else {
+            errorMessage = "Failed to get recommendations";
+          }
           isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        errorMessage = "Error: $e";
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          errorMessage = "Error: $e";
+          isLoading = false;
+        });
+      }
     }
   }
 }
@@ -228,11 +235,19 @@ class _HomepageState extends State<Homepage> {
 // Garage List Item Widget
 class GarageListItem extends StatelessWidget {
   final Garage garage;
-  
+
   const GarageListItem({required this.garage, Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
+    // Calculate values once outside of widget tree to reduce build time
+    final availability =
+        garage.studentMaxSpaces > 0
+            ? garage.studentSpaces / garage.studentMaxSpaces
+            : 0.0;
+    final availabilityColor = _getColorBasedOnAvailability(availability);
+    final availabilityText = _getAvailabilityText(availability);
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       elevation: 3,
@@ -249,23 +264,26 @@ class GarageListItem extends StatelessWidget {
                   child: Text(
                     garage.name,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold, 
+                      fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getColorBasedOnAvailability(garage).withOpacity(0.2),
+                    color: availabilityColor.withAlpha(50),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${garage.studentSpaces}/${garage.studentMaxSpaces}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: _getColorBasedOnAvailability(garage),
+                      color: availabilityColor,
                       fontSize: 16,
                     ),
                   ),
@@ -276,18 +294,11 @@ class GarageListItem extends StatelessWidget {
             if (garage.distanceToClass != null)
               Row(
                 children: [
-                  Icon(
-                    Icons.school, 
-                    size: 18, 
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.school, size: 18, color: Colors.grey[600]),
                   const SizedBox(width: 6),
                   Text(
                     'To class: ${garage.distanceToClass!.toStringAsFixed(2)} mi',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -296,18 +307,11 @@ class GarageListItem extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4.0),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.my_location, 
-                      size: 18, 
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.my_location, size: 18, color: Colors.grey[600]),
                     const SizedBox(width: 6),
                     Text(
                       'From you: ${garage.distanceFromOrigin!.toStringAsFixed(2)} mi',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -319,12 +323,10 @@ class GarageListItem extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
-                      value: garage.studentMaxSpaces > 0 
-                          ? garage.studentSpaces / garage.studentMaxSpaces 
-                          : 0,
+                      value: availability,
                       backgroundColor: Colors.grey[300],
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        _getColorBasedOnAvailability(garage),
+                        availabilityColor,
                       ),
                       minHeight: 8,
                     ),
@@ -332,10 +334,10 @@ class GarageListItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  _getAvailabilityText(garage),
+                  availabilityText,
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    color: _getColorBasedOnAvailability(garage),
+                    color: availabilityColor,
                   ),
                 ),
               ],
@@ -345,25 +347,16 @@ class GarageListItem extends StatelessWidget {
       ),
     );
   }
-  
+
   // Helper method to determine color based on availability
-  Color _getColorBasedOnAvailability(Garage garage) {
-    final availability =
-        garage.studentMaxSpaces > 0
-            ? garage.studentSpaces / garage.studentMaxSpaces
-            : 0;
-    
+  Color _getColorBasedOnAvailability(double availability) {
     if (availability > 0.5) return Colors.green;
     if (availability > 0.2) return Colors.orange;
     return Colors.red;
   }
-  
+
   // Helper method to get availability text
-  String _getAvailabilityText(Garage garage) {
-    final availability = garage.studentMaxSpaces > 0
-        ? garage.studentSpaces / garage.studentMaxSpaces
-        : 0;
-    
+  String _getAvailabilityText(double availability) {
     if (availability > 0.5) return 'High';
     if (availability > 0.2) return 'Medium';
     return 'Low';
