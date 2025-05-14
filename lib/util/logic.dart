@@ -74,6 +74,9 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
 }
 
 double calculateAvailability(Garage garage) {
+  if (garage.isLot) {
+    return garage.lotOtherSpaces?.toDouble() ?? 0.0;
+  }
   return garage.studentSpaces.toDouble();
 }
 
@@ -165,20 +168,35 @@ Future<List<Garage>> recommendations(
   final classJson = await fetchUsers(pantherid);
   if (classJson == null) {
     debugPrint("Failed to fetch class schedule");
-    return availableGarages;
+    return [];
   }
 
   // Get current or upcoming class
   final classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
     classJson,
   );
-  final classCode = classSchedule?.buildingCode ?? "No building code";
+
+  // If no class is found, return empty list
+  if (classSchedule == null) {
+    debugPrint("No current or upcoming class found");
+    return [];
+  }
+
+  final classCode = classSchedule.buildingCode;
+
+  // If no class or building code, return empty list
+  if (classCode == null ||
+      classCode.isEmpty ||
+      classCode == "No building code") {
+    debugPrint("No building code available for class");
+    return [];
+  }
 
   // Find building for the class
   final building = await getBuildingByCode(classCode);
   if (building == null) {
     debugPrint("Building not found for class code: $classCode");
-    return availableGarages;
+    return [];
   }
 
   // Update metrics and sort garages

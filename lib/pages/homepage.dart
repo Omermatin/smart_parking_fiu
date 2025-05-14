@@ -241,8 +241,13 @@ class GarageListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculate values once outside of widget tree to reduce build time
+    final isLot = garage.type.toLowerCase() == 'lot';
     final availability =
-        garage.studentMaxSpaces > 0
+        isLot
+            ? (garage.lotOtherMaxSpaces ?? 1) > 0
+                ? (garage.lotOtherSpaces ?? 0) / (garage.lotOtherMaxSpaces ?? 1)
+                : 0.0
+            : garage.studentMaxSpaces > 0
             ? garage.studentSpaces / garage.studentMaxSpaces
             : 0.0;
     final availabilityColor = _getColorBasedOnAvailability(availability);
@@ -261,13 +266,26 @@ class GarageListItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    garage.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppColors.primary,
-                    ),
+                  child: Row(
+                    children: [
+                      // Add an icon to distinguish lot vs garage
+                      Icon(
+                        isLot ? Icons.local_parking : Icons.garage,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          garage.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
@@ -280,7 +298,9 @@ class GarageListItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${garage.studentSpaces}/${garage.studentMaxSpaces}',
+                    isLot
+                        ? '${garage.lotOtherSpaces ?? 0}/${garage.lotOtherMaxSpaces ?? 0}'
+                        : '${garage.studentSpaces}/${garage.studentMaxSpaces}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: availabilityColor,
@@ -289,6 +309,18 @@ class GarageListItem extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            // Add a text to indicate if it's a lot or garage
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                isLot ? 'Parking Lot' : 'Parking Garage',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey[600],
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             if (garage.distanceToClass != null)
