@@ -7,6 +7,7 @@ import '../util/class_schedule_parser.dart';
 import '../util/building_parser.dart';
 import '../models/building.dart';
 import '../util/logic.dart';
+import 'recommendations_page.dart';
 
 // Color constants to avoid hardcoding
 class AppColors {
@@ -202,32 +203,67 @@ class _HomepageState extends State<Homepage> {
         return;
       }
 
-      // Call recommendations directly - Flutter services can't be used in compute
+      // First fetch the class schedule
+      final classJson = await fetchUsers(enteredId);
+      if (classJson == null) {
+        setState(() {
+          errorMessage = "Failed to fetch class schedule";
+          isLoading = false;
+        });
+        return;
+      }
+
+      final classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
+        classJson,
+      );
+      if (classSchedule == null) {
+        setState(() {
+          errorMessage = "No current or upcoming classes found";
+          isLoading = false;
+        });
+        return;
+      }
+
+      // Call recommendations to get parking options
       final result = await recommendations(
         enteredId,
         userPosition.longitude,
         userPosition.latitude,
       );
 
-      // Update UI after computation is complete
-      if (mounted) {
+      // Set loading to false
+      setState(() {
+        isLoading = false;
+      });
+
+      if (result is List) {
+        final garageResults = result.cast<Garage>();
+
+        // Navigate to the recommendations page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => RecommendationsPage(
+                  recommendations: garageResults,
+                  classSchedule: classSchedule,
+                ),
+          ),
+        );
+
+        debugPrint(
+          "Recommendations fetched successfully: ${garageResults.length} garages",
+        );
+      } else {
         setState(() {
-          if (result is List) {
-            garages = result.cast<Garage>();
-            errorMessage = garages.isEmpty ? "No suitable garages found." : '';
-          } else {
-            errorMessage = "Failed to get recommendations";
-          }
-          isLoading = false;
+          errorMessage = "Failed to get recommendations";
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMessage = "Error: $e";
-          isLoading = false;
-        });
-      }
+      setState(() {
+        errorMessage = "Error: $e";
+        isLoading = false;
+      });
     }
   }
 }
