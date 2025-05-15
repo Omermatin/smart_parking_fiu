@@ -75,9 +75,11 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
 
 double calculateAvailability(Garage garage) {
   if (garage.isLot) {
-    return garage.lotOtherSpaces?.toDouble() ?? 0.0;
+    final other = garage.lotOtherSpaces?.toDouble() ?? 0.0;
+    final max = garage.lotOtherMaxSpaces?.toDouble() ?? 0.0;
+    return max - other;
   }
-  return garage.studentSpaces.toDouble();
+  return garage.studentMaxSpaces.toDouble() - garage.studentSpaces.toDouble();
 }
 
 void updateGaragesWithMetrics(
@@ -107,10 +109,11 @@ void updateGaragesWithMetrics(
 
 List<Garage> sortGarages(List<Garage> garages) {
   // Constants for threshold distances (in miles)
+
   const double classDistanceThreshold =
       0.2; // When distances to class are considered "trivially close"
   const double originDistanceThreshold =
-      0.3; // When distances from origin are considered "trivially close"
+      0.2; // When distances from origin are considered "trivially close"
 
   // Filter out garages with missing data
   final filteredGarages =
@@ -204,6 +207,13 @@ Future<List<Garage>> recommendations(
 
   // Use compute for sorting to avoid UI jank
   final sorted = await compute(sortGarages, availableGarages);
+
+  for (var garage in sorted) {
+    debugPrint('Garage: ${garage.name}');
+    debugPrint('Distance: ${garage.distanceToClass} miles');
+    debugPrint('Spaces Available: ${garage.availableSpaces}');
+    debugPrint('Distance to Origin: ${garage.distanceFromOrigin} miles\n');
+  }
 
   return sorted;
 }

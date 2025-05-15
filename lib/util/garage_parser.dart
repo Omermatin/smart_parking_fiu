@@ -10,7 +10,7 @@ class GarageParser {
             int max = int.tryParse(entry['studentMaxSpaces'] ?? '1') ?? 1;
             return (max - current) > 0;
           } else {
-            // For lots, check otherSpaces
+            // For lots, check otherSpaces (from "otherSpaces" in JSON)
             int current = int.tryParse(entry['otherSpaces'] ?? '0') ?? 0;
             int max = int.tryParse(entry['otherMaxSpaces'] ?? '1') ?? 1;
             return (max - current) > 0;
