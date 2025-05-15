@@ -52,7 +52,6 @@ class _HomepageState extends State<Homepage> {
 
   @override
   void dispose() {
-    // Dispose controller to prevent memory leaks
     idController.dispose();
     super.dispose();
   }
@@ -127,7 +126,9 @@ class _HomepageState extends State<Homepage> {
 
             // Submit Button with loading state
             isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
                 : ElevatedButton(
                   onPressed: validateAndFetchGarages,
                   style: ElevatedButton.styleFrom(
@@ -174,6 +175,7 @@ class _HomepageState extends State<Homepage> {
   void validateAndFetchGarages() async {
     setState(() {
       errorMessage = '';
+      isLoading = true; // Start loading immediately
     });
 
     // Unfocus keyboard
@@ -181,15 +183,13 @@ class _HomepageState extends State<Homepage> {
 
     // Validate form first - this handles both format and valid ID checks
     if (!_formKey.currentState!.validate()) {
+      setState(() {
+        isLoading = false; // Stop loading if validation fails
+      });
       return;
     }
 
     final enteredId = idController.text.trim();
-
-    // Set loading state
-    setState(() {
-      isLoading = true;
-    });
 
     try {
       // Get position outside of setState
@@ -231,13 +231,11 @@ class _HomepageState extends State<Homepage> {
         userPosition.latitude,
       );
 
-      // Set loading to false
-      setState(() {
-        isLoading = false;
-      });
-
       if (result is List) {
         final garageResults = result.cast<Garage>();
+
+        // Only set isLoading to false AFTER navigation
+        // This prevents the button from flashing
 
         // Navigate to the recommendations page
         Navigator.push(
@@ -249,7 +247,14 @@ class _HomepageState extends State<Homepage> {
                   classSchedule: classSchedule,
                 ),
           ),
-        );
+        ).then((_) {
+          // Set loading to false after returning from recommendations page
+          if (mounted) {
+            setState(() {
+              isLoading = false;
+            });
+          }
+        });
 
         debugPrint(
           "Recommendations fetched successfully: ${garageResults.length} garages",
@@ -257,6 +262,7 @@ class _HomepageState extends State<Homepage> {
       } else {
         setState(() {
           errorMessage = "Failed to get recommendations";
+          isLoading = false;
         });
       }
     } catch (e) {

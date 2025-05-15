@@ -40,9 +40,9 @@ class Garage {
       latitude: double.tryParse(jsonData['Latitude'] ?? '0') ?? 0.0,
       longitude: double.tryParse(jsonData['Longitude'] ?? '0') ?? 0.0,
       lotOtherSpaces:
-          isLot ? int.tryParse(jsonData['lotOtherSpaces'] ?? '0') ?? 0 : 0,
+          isLot ? int.tryParse(jsonData['otherSpaces'] ?? '0') ?? 0 : 0,
       lotOtherMaxSpaces:
-          isLot ? int.tryParse(jsonData['lotOtherMaxSpaces'] ?? '1') ?? 1 : 0,
+          isLot ? int.tryParse(jsonData['otherMaxSpaces'] ?? '1') ?? 1 : 0,
     );
   }
   @override

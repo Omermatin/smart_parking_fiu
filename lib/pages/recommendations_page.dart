@@ -3,7 +3,7 @@ import '../models/garage.dart';
 import '../models/class_schedule.dart';
 import '../pages/homepage.dart'; // For AppColors
 
-class RecommendationsPage extends StatelessWidget {
+class RecommendationsPage extends StatefulWidget {
   final List<Garage> recommendations;
   final ClassSchedule classSchedule;
 
@@ -13,6 +13,11 @@ class RecommendationsPage extends StatelessWidget {
     required this.classSchedule,
   }) : super(key: key);
 
+  @override
+  State<RecommendationsPage> createState() => _RecommendationsPageState();
+}
+
+class _RecommendationsPageState extends State<RecommendationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,7 +43,7 @@ class RecommendationsPage extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '${recommendations.length} options',
+                  '${widget.recommendations.length} options',
                   style: TextStyle(color: Colors.grey[600]),
                 ),
               ],
@@ -48,12 +53,12 @@ class RecommendationsPage extends StatelessWidget {
           // Recommendations list
           Expanded(
             child:
-                recommendations.isEmpty
+                widget.recommendations.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
-                      itemCount: recommendations.length,
+                      itemCount: widget.recommendations.length,
                       itemBuilder: (context, index) {
-                        return GarageListItem(garage: recommendations[index]);
+                        return GarageListItem(garage: widget.recommendations[index]);
                       },
                     ),
           ),
@@ -78,7 +83,7 @@ class RecommendationsPage extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    classSchedule.courseName,
+                    widget.classSchedule.courseName,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -95,14 +100,14 @@ class RecommendationsPage extends StatelessWidget {
                   child: _buildInfoItem(
                     Icons.location_on,
                     'Building',
-                    classSchedule.buildingCode,
+                    widget.classSchedule.buildingCode,
                   ),
                 ),
                 Expanded(
                   child: _buildInfoItem(
                     Icons.access_time,
                     'Time',
-                    '${classSchedule.meetingTimeStart} - ${classSchedule.meetingTimeEnd}',
+                    '${widget.classSchedule.meetingTimeStart} - ${widget.classSchedule.meetingTimeEnd}',
                   ),
                 ),
               ],
@@ -114,16 +119,16 @@ class RecommendationsPage extends StatelessWidget {
                   child: _buildInfoItem(
                     Icons.calendar_today,
                     'Days',
-                    classSchedule.meetingDays,
+                    widget.classSchedule.meetingDays,
                   ),
                 ),
                 Expanded(
                   child: _buildInfoItem(
                     Icons.info_outline,
                     'Status',
-                    classSchedule.today == 'true' ? 'In Progress' : 'Upcoming',
+                    widget.classSchedule.today == 'true' ? 'In Progress' : 'Upcoming',
                     color:
-                        classSchedule.today == 'true'
+                        widget.classSchedule.today == 'true'
                             ? Colors.green
                             : Colors.orange,
                   ),
