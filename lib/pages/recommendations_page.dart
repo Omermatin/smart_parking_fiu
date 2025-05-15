@@ -18,21 +18,23 @@ class RecommendationsPage extends StatefulWidget {
 }
 
 class _RecommendationsPageState extends State<RecommendationsPage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Parking Recommendations'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Parking Recommendations'),
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    body: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Class information card
+          // Class Information Card
           _buildClassInfoCard(),
 
-          // Recommendations heading
+          // Recommendations Heading
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -50,23 +52,22 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
             ),
           ),
 
-          // Recommendations list
-          Expanded(
-            child:
-                widget.recommendations.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                      itemCount: widget.recommendations.length,
-                      itemBuilder: (context, index) {
-                        return GarageListItem(garage: widget.recommendations[index]);
-                      },
-                    ),
-          ),
+          // Recommendations List or Empty State
+          widget.recommendations.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  shrinkWrap: true, // Makes it take only necessary height
+                  physics: const NeverScrollableScrollPhysics(), // Prevents separate scrolling
+                  itemCount: widget.recommendations.length,
+                  itemBuilder: (context, index) {
+                    return GarageListItem(garage: widget.recommendations[index]);
+                  },
+                ),
         ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildClassInfoCard() {
     return Card(
       margin: const EdgeInsets.all(16.0),

@@ -73,13 +73,13 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
   return radius * c;
 }
 
-double calculateAvailability(Garage garage) {
+int calculateAvailability(Garage garage) {
   if (garage.isLot) {
-    final other = garage.lotOtherSpaces?.toDouble() ?? 0.0;
-    final max = garage.lotOtherMaxSpaces?.toDouble() ?? 0.0;
+    final other = garage.lotOtherSpaces?.toInt() ?? 0;
+    final max = garage.lotOtherMaxSpaces?.toInt() ?? 0;
     return max - other;
   }
-  return garage.studentMaxSpaces.toDouble() - garage.studentSpaces.toDouble();
+  return garage.studentMaxSpaces.toInt() - garage.studentSpaces.toInt();
 }
 
 void updateGaragesWithMetrics(
@@ -186,14 +186,6 @@ Future<List<Garage>> recommendations(
   }
 
   final classCode = classSchedule.buildingCode;
-
-  // If no class or building code, return empty list
-  if (classCode == null ||
-      classCode.isEmpty ||
-      classCode == "No building code") {
-    debugPrint("No building code available for class");
-    return [];
-  }
 
   // Find building for the class
   final building = await getBuildingByCode(classCode);

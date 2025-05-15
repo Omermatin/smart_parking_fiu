@@ -14,15 +14,11 @@ import 'package:smart_parking_fiu/util/logic.dart';
 Future<void> main() async {
   // Initialize Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
-
   // Load environment variables
   await dotenv.load();
-
   // Initialize location service
   await LocationService.initializeUserLocation();
 
-  // Debug current position
-  debugPrint("Location: ${LocationService.currentPosition}");
 
   // Run the app
   runApp(const MyApp());

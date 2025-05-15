@@ -66,7 +66,7 @@ class _HomepageState extends State<Homepage> {
         child: ListView(
           padding: const EdgeInsets.all(30),
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 50),
             SizedBox(
               height: 80,
               child: Center(child: Image.asset('images/fiualonetrans.png')),
@@ -179,7 +179,7 @@ class _HomepageState extends State<Homepage> {
     });
 
     // Unfocus keyboard
-    FocusScope.of(context).unfocus();
+   
 
     // Validate form first - this handles both format and valid ID checks
     if (!_formKey.currentState!.validate()) {
@@ -284,16 +284,16 @@ class GarageListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate values once outside of widget tree to reduce build time
     final isLot = garage.type.toLowerCase() == 'lot';
-    final availability =
+        final availability =
         isLot
             ? (garage.lotOtherMaxSpaces ?? 1) > 0
-                ? (garage.lotOtherSpaces ?? 0) / (garage.lotOtherMaxSpaces ?? 1)
+                ? ((garage.lotOtherMaxSpaces ?? 0 ) - (garage.lotOtherSpaces ?? 0)) / (garage.lotOtherMaxSpaces ?? 1)
                 : 0.0
             : garage.studentMaxSpaces > 0
-            ? garage.studentSpaces / garage.studentMaxSpaces
+            ? (garage.studentMaxSpaces - garage.studentSpaces) / garage.studentMaxSpaces
             : 0.0;
     final availabilityColor = _getColorBasedOnAvailability(availability);
-    final availabilityText = _getAvailabilityText(availability);
+
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -336,18 +336,12 @@ class GarageListItem extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: availabilityColor.withAlpha(50),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    isLot
-                        ? '${garage.lotOtherSpaces ?? 0}/${garage.lotOtherMaxSpaces ?? 0}'
-                        : '${garage.studentSpaces}/${garage.studentMaxSpaces}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: availabilityColor,
-                      fontSize: 16,
-                    ),
+                    'Spaces Available: ${garage.availableSpaces}',
+                    style: TextStyle(fontSize: 15, color: Colors.grey[700],
+                     fontWeight: FontWeight.bold)
                   ),
                 ),
               ],
@@ -407,13 +401,6 @@ class GarageListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  availabilityText,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: availabilityColor,
-                  ),
-                ),
               ],
             ),
           ],
@@ -430,9 +417,4 @@ class GarageListItem extends StatelessWidget {
   }
 
   // Helper method to get availability text
-  String _getAvailabilityText(double availability) {
-    if (availability > 0.5) return 'High';
-    if (availability > 0.2) return 'Medium';
-    return 'Low';
-  }
 }

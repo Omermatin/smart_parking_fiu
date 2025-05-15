@@ -37,7 +37,7 @@ class ClassScheduleParser {
             catalogNumber: classItem['catalogNumber'] ?? '',
             classSection: classItem['classSection'] ?? '',
             meetingDays: meeting['meetingDays'] ?? '',
-            today: meeting['today']?.toString().toLowerCase() == 'true' ? 'true' : 'false',
+            today: meeting['today'] = "true",
           );
 
           // If the class is ongoing, we immediately return it
