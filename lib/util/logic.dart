@@ -109,43 +109,61 @@ void updateGaragesWithMetrics(
 
 List<Garage> sortGarages(List<Garage> garages) {
   // Constants for threshold distances (in miles)
-
-  const double classDistanceThreshold =
-      0.2; // When distances to class are considered "trivially close"
-  const double originDistanceThreshold =
-      0.2; // When distances from origin are considered "trivially close"
+  const double classDistanceThreshold = 0.2;
+  const double originDistanceThreshold = 0.2;
 
   // Filter out garages with missing data
-  final filteredGarages =
-      garages.where((garage) {
-        return garage.distanceToClass != null &&
-            garage.distanceFromOrigin != null &&
-            garage.availableSpaces != null;
-      }).toList();
+  final filteredGarages = garages.where((garage) {
+    return garage.distanceToClass != null &&
+        garage.distanceFromOrigin != null &&
+        garage.availableSpaces != null;
+  }).toList();
 
-  // Sort the garages according to the prioritized scheme
-  filteredGarages.sort((a, b) {
-    // PRIORITY 1: Distance to class (primary factor)
-    final classDiff = (a.distanceToClass! - b.distanceToClass!).abs();
-    if (classDiff > classDistanceThreshold) {
-      // If difference is significant, sort by closest to class
-      return a.distanceToClass!.compareTo(b.distanceToClass!);
+  // First, sort all garages by distance to class
+  filteredGarages.sort((a, b) => a.distanceToClass!.compareTo(b.distanceToClass!));
+
+  // Group garages that are within the threshold distance of each other
+  List<List<Garage>> groups = [];
+  List<Garage> currentGroup = [];
+  
+  for (var garage in filteredGarages) {
+    if (currentGroup.isEmpty) {
+      currentGroup.add(garage);
+    } else {
+      // Check if this garage is within threshold distance of the first garage in the group
+      double diff = (garage.distanceToClass! - currentGroup[0].distanceToClass!).abs();
+      if (diff <= classDistanceThreshold) {
+        currentGroup.add(garage);
+      } else {
+        // Start a new group
+        groups.add(currentGroup);
+        currentGroup = [garage];
+      }
     }
+  }
+  // Add the last group if not empty
+  if (currentGroup.isNotEmpty) {
+    groups.add(currentGroup);
+  }
 
-    // PRIORITY 2: Distance from origin (secondary factor, when class distances are close)
-    final originDiff = (a.distanceFromOrigin! - b.distanceFromOrigin!).abs();
-    if (originDiff > originDistanceThreshold) {
-      // If difference is significant, sort by closest from origin
-      return a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!);
-    }
+  // Sort each group by secondary criteria
+  for (var group in groups) {
+    group.sort((a, b) {
+      // PRIORITY 2: Distance from origin
+      final originDiff = (a.distanceFromOrigin! - b.distanceFromOrigin!).abs();
+      if (originDiff > originDistanceThreshold) {
+        return a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!);
+      }
+      
+      // PRIORITY 3: Available spaces
+      return b.availableSpaces!.compareTo(a.availableSpaces!);
+    });
+  }
 
-    // PRIORITY 3: Available spaces (when both distances are trivially close)
-    // Higher available spaces is better, so reverse the comparison
-    return b.availableSpaces!.compareTo(a.availableSpaces!);
-  });
-
-  return filteredGarages;
+  // Flatten the groups back into a single list
+  return groups.expand((group) => group).toList();
 }
+
 
 Future<List<Garage>> recommendations(
   String pantherid,

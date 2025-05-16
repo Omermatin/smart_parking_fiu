@@ -1,7 +1,10 @@
 // parsers/class_schedule_parser.dart
 import '../models/class_schedule.dart';
+
 class ClassScheduleParser {
-  static ClassSchedule? getCurrentOrUpcomingClass(Map<String, dynamic> studentJson) {
+  static ClassSchedule? getCurrentOrUpcomingClass(
+    Map<String, dynamic> studentJson,
+  ) {
     final now = DateTime.now();
     ClassSchedule? nextClass;
 
@@ -14,10 +17,16 @@ class ClassScheduleParser {
         final meetings = classItem['meetings'] as List<dynamic>;
 
         // Only consider meetings marked as "today": "true"
-        final validMeetings = meetings.where((meeting) =>
-            meeting['today']?.toString().toLowerCase() == 'true').toList();
-        
-        if (validMeetings.isEmpty) continue; // Skip if no valid meetings for today
+        final validMeetings =
+            meetings
+                .where(
+                  (meeting) =>
+                      meeting['today']?.toString().toLowerCase() == 'true',
+                )
+                .toList();
+
+        if (validMeetings.isEmpty)
+          continue; // Skip if no valid meetings for today
 
         for (var meeting in validMeetings) {
           final startTimeStr = meeting['meetingTimeStart'] ?? '';
@@ -48,7 +57,7 @@ class ClassScheduleParser {
 
             // If not ongoing, but it is upcoming
             if (now.isBefore(startTime)) {
-              if (nextClass == null || 
+              if (nextClass == null ||
                   _parseTime(nextClass.meetingTimeStart)!.isAfter(startTime)) {
                 nextClass = temporaryClass;
               }
@@ -65,8 +74,10 @@ class ClassScheduleParser {
   // Private method for parsing time
   static DateTime? _parseTime(String timeStr) {
     if (timeStr.isEmpty) return null;
-    
-    final match = RegExp(r'^(\d{1,2}):(\d{2})(AM|PM)$').firstMatch(timeStr.trim());
+
+    final match = RegExp(
+      r'^(\d{1,2}):(\d{2})(AM|PM)$',
+    ).firstMatch(timeStr.trim());
     if (match == null) return null;
 
     int hour = int.parse(match.group(1)!);
