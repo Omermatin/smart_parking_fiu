@@ -1,12 +1,10 @@
-import 'dart:convert';
-import 'package:flutter/material.dart';
+
 import '../models/garage.dart';
 import '../models/class_schedule.dart';
 import '../models/building.dart';
 import '../services/api_service.dart';
 import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
 import 'package:smart_parking_fiu/util/building_parser.dart';
 import 'package:smart_parking_fiu/util/garage_parser.dart';
 import 'package:geolocator/geolocator.dart';
@@ -173,6 +171,7 @@ Future<List<Garage>> recommendations(
   String pantherid,
   double longitude,
   double latitude,
+  ClassSchedule classSchedule,
 ) async {
   // Load environment variables if needed
   if (dotenv.env.isEmpty) {
@@ -189,28 +188,11 @@ Future<List<Garage>> recommendations(
   // Parse garages
   final availableGarages = GarageParser.parseGarages(results);
 
-  // Fetch user schedule
-  final classJson = await fetchUsers(pantherid);
-  if (classJson == null) {
-    debugPrint("Failed to fetch class schedule");
-    return [];
-  }
-
-  // Get current or upcoming class
-  final classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
-    classJson,
-  );
-
-  // If no class is found, return empty list
-  if (classSchedule == null) {
-    debugPrint("No current or upcoming class found");
-    return [];
-  }
-
+  // Get class code from the passed classSchedule
   final classCode = classSchedule.buildingCode;
 
   // Find building for the class
-  final building = await getBuildingByCode(classCode);
+  final building = getBuildingByCode(classCode);
   if (building == null) {
     debugPrint("Building not found for class code: $classCode");
     return [];
@@ -232,7 +214,3 @@ Future<List<Garage>> recommendations(
   return sorted;
 }
 
-// Wrapper for compute to run sorting off the main thread
-Future<List<Garage>> computeSortGarages(List<Garage> garages) {
-  return compute(sortGarages, garages);
-}

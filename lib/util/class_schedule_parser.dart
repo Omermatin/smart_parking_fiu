@@ -25,15 +25,16 @@ class ClassScheduleParser {
                 )
                 .toList();
 
-        if (validMeetings.isEmpty)
+        if (validMeetings.isEmpty) {
           continue; // Skip if no valid meetings for today
+        }
 
         for (var meeting in validMeetings) {
           final startTimeStr = meeting['meetingTimeStart'] ?? '';
           final endTimeStr = meeting['meetingTimeEnd'] ?? '';
 
-          final startTime = _parseTime(startTimeStr);
-          final endTime = _parseTime(endTimeStr);
+          final startTime = parseTime(startTimeStr);
+          final endTime = parseTime(endTimeStr);
 
           // Create a temporary class object with only the relevant meeting
           final temporaryClass = ClassSchedule(
@@ -58,7 +59,7 @@ class ClassScheduleParser {
             // If not ongoing, but it is upcoming
             if (now.isBefore(startTime)) {
               if (nextClass == null ||
-                  _parseTime(nextClass.meetingTimeStart)!.isAfter(startTime)) {
+                  parseTime(nextClass.meetingTimeStart)!.isAfter(startTime)) {
                 nextClass = temporaryClass;
               }
             }
@@ -71,8 +72,8 @@ class ClassScheduleParser {
     return nextClass; // This will be null if no upcoming classes exist
   }
 
-  // Private method for parsing time
-  static DateTime? _parseTime(String timeStr) {
+  // Public method for parsing time
+  static DateTime? parseTime(String timeStr) {
     if (timeStr.isEmpty) return null;
 
     final match = RegExp(
