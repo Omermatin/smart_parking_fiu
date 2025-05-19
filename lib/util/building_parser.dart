@@ -3,7 +3,37 @@ import 'package:flutter/material.dart';
 import '../models/building.dart';
 import '../services/api_service.dart';
 
-List<Building>? _cachedBuildings;
+class BuildingCache {
+  static List<Building>? _buildings;
+  static bool _isInitialized = false;
+
+  /// Initialize the building cache. Should be called once at app startup.
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    debugPrint('Initializing building cache');
+    final jsonData = await fetchBuilding();
+    if (jsonData == null) {
+      _buildings = [];
+    } else {
+      _buildings = BuildingParser.parseBuildings(jsonData);
+    }
+    _isInitialized = true;
+    debugPrint(
+      'Building cache initialized with ${_buildings?.length ?? 0} buildings',
+    );
+  }
+
+  /// Get all buildings. Must call initialize() first.
+  static List<Building> getBuildings() {
+    if (!_isInitialized) {
+      throw Exception(
+        'BuildingCache not initialized. Call initialize() first.',
+      );
+    }
+    return _buildings ?? [];
+  }
+}
 
 class BuildingParser {
   static List<Building> parseBuildings(List<dynamic> jsonList) {
@@ -22,26 +52,14 @@ class BuildingParser {
   }
 }
 
-// Keep this to fetch and cache buildings
-Future<List<Building>> getAllMMCBuildings() async {
-  if (_cachedBuildings != null) {
-    debugPrint('Returning cached buildings');
-    return _cachedBuildings!;
+// This gets a single building by its code (e.g., "PG6")
+Building? getBuildingByCode(String buildingCode) {
+  if (!BuildingCache._isInitialized) {
+    throw Exception('BuildingCache not initialized. Call initialize() first.');
   }
 
-  debugPrint('Fetching buildings for the first time');
-  final jsonData = await fetchBuilding();
-  if (jsonData == null) return [];
-
-  _cachedBuildings = BuildingParser.parseBuildings(jsonData);
-  return _cachedBuildings!;
-}
-
-// This gets a single building by its code (e.g., "PG6")
-Future<Building?> getBuildingByCode(String buildingCode) async {
-  final buildings = await getAllMMCBuildings();
   try {
-    return buildings.firstWhere(
+    return BuildingCache.getBuildings().firstWhere(
       (b) => b.name.toUpperCase() == buildingCode.toUpperCase(),
     );
   } catch (e) {

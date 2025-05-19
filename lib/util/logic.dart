@@ -73,13 +73,14 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
   return radius * c;
 }
 
+/// Format a distance in miles to a string with 2 decimal places
+String formatDistance(double? distance) {
+  if (distance == null) return 'N/A';
+  return '${distance.toStringAsFixed(2)} mi';
+}
+
 int calculateAvailability(Garage garage) {
-  if (garage.isLot) {
-    final other = garage.lotOtherSpaces?.toInt() ?? 0;
-    final max = garage.lotOtherMaxSpaces?.toInt() ?? 0;
-    return max - other;
-  }
-  return garage.studentMaxSpaces.toInt() - garage.studentSpaces.toInt();
+  return garage.calculateAvailableSpaces();
 }
 
 void updateGaragesWithMetrics(
@@ -113,25 +114,29 @@ List<Garage> sortGarages(List<Garage> garages) {
   const double originDistanceThreshold = 0.2;
 
   // Filter out garages with missing data
-  final filteredGarages = garages.where((garage) {
-    return garage.distanceToClass != null &&
-        garage.distanceFromOrigin != null &&
-        garage.availableSpaces != null;
-  }).toList();
+  final filteredGarages =
+      garages.where((garage) {
+        return garage.distanceToClass != null &&
+            garage.distanceFromOrigin != null &&
+            garage.availableSpaces != null;
+      }).toList();
 
   // First, sort all garages by distance to class
-  filteredGarages.sort((a, b) => a.distanceToClass!.compareTo(b.distanceToClass!));
+  filteredGarages.sort(
+    (a, b) => a.distanceToClass!.compareTo(b.distanceToClass!),
+  );
 
   // Group garages that are within the threshold distance of each other
   List<List<Garage>> groups = [];
   List<Garage> currentGroup = [];
-  
+
   for (var garage in filteredGarages) {
     if (currentGroup.isEmpty) {
       currentGroup.add(garage);
     } else {
       // Check if this garage is within threshold distance of the first garage in the group
-      double diff = (garage.distanceToClass! - currentGroup[0].distanceToClass!).abs();
+      double diff =
+          (garage.distanceToClass! - currentGroup[0].distanceToClass!).abs();
       if (diff <= classDistanceThreshold) {
         currentGroup.add(garage);
       } else {
@@ -154,7 +159,7 @@ List<Garage> sortGarages(List<Garage> garages) {
       if (originDiff > originDistanceThreshold) {
         return a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!);
       }
-      
+
       // PRIORITY 3: Available spaces
       return b.availableSpaces!.compareTo(a.availableSpaces!);
     });
@@ -163,7 +168,6 @@ List<Garage> sortGarages(List<Garage> garages) {
   // Flatten the groups back into a single list
   return groups.expand((group) => group).toList();
 }
-
 
 Future<List<Garage>> recommendations(
   String pantherid,

@@ -1,14 +1,7 @@
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:smart_parking_fiu/models/class_schedule.dart';
-import 'package:smart_parking_fiu/util/garage_parser.dart';
 import 'pages/homepage.dart';
-import 'models/garage.dart';
-import 'package:smart_parking_fiu/services/api_service.dart';
-import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
-import 'package:smart_parking_fiu/util/building_parser.dart';
-import 'package:smart_parking_fiu/models/building.dart';
 import 'package:smart_parking_fiu/util/logic.dart';
 
 Future<void> main() async {

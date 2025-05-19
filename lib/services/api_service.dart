@@ -3,6 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 
+/// Get the common headers for API calls
+Map<String, String> _getApiHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': dotenv.env['API_KEY']!,
+  };
+}
+
 Future<dynamic> fetchUsers(String studentsIds) async {
   debugPrint('Getting JSON Data');
 
@@ -16,14 +24,8 @@ Future<dynamic> fetchUsers(String studentsIds) async {
   final fullUrl = '$baseUrl$studentsIds';
   final url = Uri.parse(fullUrl);
 
-  final headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': dotenv.env['API_KEY']!,
-  };
-
   try {
-    final response = await http.get(url, headers: headers);
-
+    final response = await http.get(url, headers: _getApiHeaders());
     return jsonDecode(response.body);
   } catch (e) {
     return null;
@@ -38,14 +40,8 @@ Future<dynamic> fetchParking() async {
   }
   final url = Uri.parse(fullUrl);
 
-  final headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': dotenv.env['API_KEY']!,
-  };
-
   try {
-    final response = await http.get(url, headers: headers);
-
+    final response = await http.get(url, headers: _getApiHeaders());
     return jsonDecode(response.body);
   } catch (e) {
     return null;
@@ -57,14 +53,8 @@ Future<dynamic> fetchBuilding() async {
 
   final url = Uri.parse(fullUrl!);
 
-  final headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': dotenv.env['API_KEY']!,
-  };
-
   try {
-    final response = await http.get(url, headers: headers);
-
+    final response = await http.get(url, headers: _getApiHeaders());
     return jsonDecode(response.body);
   } catch (e) {
     return null;

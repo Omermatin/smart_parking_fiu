@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../models/garage.dart';
-import '../util/garage_parser.dart';
 import '../util/class_schedule_parser.dart';
-import '../util/building_parser.dart';
-import '../models/building.dart';
 import '../util/logic.dart';
+import '../util/building_parser.dart';
 import 'recommendations_page.dart';
 
 // Color constants to avoid hardcoding
@@ -40,6 +37,18 @@ class _HomepageState extends State<Homepage> {
     '8888888',
     '9999999',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize building cache and location service
+    Future.wait([
+      BuildingCache.initialize(),
+      LocationService.initializeUserLocation(),
+    ]).catchError((error) {
+      debugPrint('Error initializing services: $error');
+    });
+  }
 
   // Helper method to check if an ID is valid
   bool isValidPantherId(String id) {
@@ -283,17 +292,7 @@ class GarageListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate values once outside of widget tree to reduce build time
     final isLot = garage.type.toLowerCase() == 'lot';
-    final availability =
-        isLot
-            ? (garage.lotOtherMaxSpaces ?? 1) > 0
-                ? ((garage.lotOtherMaxSpaces ?? 0) -
-                        (garage.lotOtherSpaces ?? 0)) /
-                    (garage.lotOtherMaxSpaces ?? 1)
-                : 0.0
-            : garage.studentMaxSpaces > 0
-            ? (garage.studentMaxSpaces - garage.studentSpaces) /
-                garage.studentMaxSpaces
-            : 0.0;
+    final availability = garage.calculateAvailabilityPercentage();
     final availabilityColor = _getColorBasedOnAvailability(availability);
 
     return Card(
@@ -369,7 +368,7 @@ class GarageListItem extends StatelessWidget {
                   Icon(Icons.school, size: 18, color: Colors.grey[600]),
                   const SizedBox(width: 6),
                   Text(
-                    'To class: ${garage.distanceToClass!.toStringAsFixed(2)} mi',
+                    'To class: ${formatDistance(garage.distanceToClass)}',
                     style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                   ),
                 ],
@@ -382,7 +381,7 @@ class GarageListItem extends StatelessWidget {
                     Icon(Icons.my_location, size: 18, color: Colors.grey[600]),
                     const SizedBox(width: 6),
                     Text(
-                      'From you: ${garage.distanceFromOrigin!.toStringAsFixed(2)} mi',
+                      'From you: ${formatDistance(garage.distanceFromOrigin)}',
                       style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                     ),
                   ],
