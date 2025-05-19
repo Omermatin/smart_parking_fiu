@@ -55,7 +55,7 @@ class GarageListItem extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  width: 163,
+                  width: 166,
                   alignment: Alignment.centerRight,
                   child: RichText(
                     textAlign: TextAlign.right,
