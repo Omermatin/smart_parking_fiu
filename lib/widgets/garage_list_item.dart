@@ -56,7 +56,6 @@ class GarageListItem extends StatelessWidget {
                 ),
                 Container(
                   width: 166,
-                  alignment: Alignment.centerRight,
                   child: RichText(
                     textAlign: TextAlign.right,
                     text: TextSpan(
@@ -66,7 +65,7 @@ class GarageListItem extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
-                        const TextSpan(text: 'Spaces Available: '),
+                        const TextSpan(text: 'Spaces: '),
                         TextSpan(text: '${garage.availableSpaces}'),
                       ],
                     ),
