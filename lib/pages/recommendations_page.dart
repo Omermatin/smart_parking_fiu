@@ -30,41 +30,45 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: ListView(
-        children: [
-          // Class Information Card
-          ClassInfoCard(classSchedule: widget.classSchedule),
+      body: SafeArea(
+        child: ListView(
+          children: [
+            // Class Information Card
+            ClassInfoCard(classSchedule: widget.classSchedule),
 
-          // Recommendations Heading
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Text(
-                  'Recommended Parking',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Text(
-                  '${widget.recommendations.length} options',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-
-          // Recommendations List or Empty State
-          widget.recommendations.isEmpty
-              ? const EmptyRecommendations()
-              : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: widget.recommendations.length,
-                itemBuilder: (context, index) {
-                  return GarageListItem(garage: widget.recommendations[index]);
-                },
+            // Recommendations Heading
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Text(
+                    'Recommended Parking',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${widget.recommendations.length} options',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
               ),
-        ],
+            ),
+
+            // Recommendations List or Empty State
+            widget.recommendations.isEmpty
+                ? const EmptyRecommendations()
+                : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: widget.recommendations.length,
+                  itemBuilder: (context, index) {
+                    return GarageListItem(
+                      garage: widget.recommendations[index],
+                    );
+                  },
+                ),
+          ],
+        ),
       ),
     );
   }

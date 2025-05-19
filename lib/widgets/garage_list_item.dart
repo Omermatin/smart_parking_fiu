@@ -54,8 +54,9 @@ class GarageListItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(
+                Container(
                   width: 163,
+                  alignment: Alignment.centerRight,
                   child: Text(
                     'Spaces Available: ${garage.availableSpaces}',
                     style: TextStyle(
@@ -63,6 +64,7 @@ class GarageListItem extends StatelessWidget {
                       color: Colors.grey[700],
                       fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.right,
                   ),
                 ),
               ],
