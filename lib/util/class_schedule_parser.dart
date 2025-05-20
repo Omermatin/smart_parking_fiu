@@ -48,6 +48,7 @@ class ClassScheduleParser {
             classSection: classItem['classSection'] ?? '',
             meetingDays: meeting['meetingDays'] ?? '',
             today: meeting['today'] = "true",
+            pantherId: studentJson['pantherId'] ?? '',
           );
 
           // If the class is ongoing, we immediately return it

@@ -4,10 +4,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 
 /// Get the common headers for API calls
-Map<String, String> _getApiHeaders() {
+Map<String, String> _getApiHeadersForParkingAndBuilding() {
   return {
     'Content-Type': 'application/json',
     'x-api-key': dotenv.env['API_KEY']!,
+  };
+}
+
+Map<String, String> _getApiHeadersForSchedule() {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': dotenv.env['API_KEYSCHEDULE']!,
   };
 }
 
@@ -21,13 +28,13 @@ Future<dynamic> fetchUsers(String studentsIds) async {
     return null;
   }
 
-  final fullUrl = '$baseUrl$studentsIds';
-  final url = Uri.parse(fullUrl);
+    final fullUrl = '$baseUrl$studentsIds';
+    final url = Uri.parse(fullUrl);
 
-  try {
-    final response = await http.get(url, headers: _getApiHeaders());
-    return jsonDecode(response.body);
-  } catch (e) {
+    try {
+      final response = await http.get(url, headers: _getApiHeadersForSchedule());
+      return jsonDecode(response.body);
+    } catch (e) {
     return null;
   }
 }
@@ -41,7 +48,7 @@ Future<dynamic> fetchParking() async {
   final url = Uri.parse(fullUrl);
 
   try {
-    final response = await http.get(url, headers: _getApiHeaders());
+    final response = await http.get(url, headers: _getApiHeadersForParkingAndBuilding());
     return jsonDecode(response.body);
   } catch (e) {
     return null;
@@ -54,7 +61,7 @@ Future<dynamic> fetchBuilding() async {
   final url = Uri.parse(fullUrl!);
 
   try {
-    final response = await http.get(url, headers: _getApiHeaders());
+    final response = await http.get(url, headers: _getApiHeadersForParkingAndBuilding());
     return jsonDecode(response.body);
   } catch (e) {
     return null;

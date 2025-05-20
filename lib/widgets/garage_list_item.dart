@@ -18,11 +18,10 @@ class GarageListItem extends StatelessWidget {
     // Calculate values once outside of widget tree to reduce build time
     final isLot = garage.type.toLowerCase() == 'lot';
     final availability = garage.calculateAvailabilityPercentage();
-    final availabilityColor = _getColorBasedOnAvailability(availability);
-
     return Card(
+      color: AppColors.backgroundwidget,
       margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      elevation: 3,
+      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(15.0),
@@ -47,14 +46,14 @@ class GarageListItem extends StatelessWidget {
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: AppColors.primary,
+                            color: Color.fromARGB(255, 2, 33, 80),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: 166,
                   child: RichText(
                     textAlign: TextAlign.right,
@@ -65,7 +64,7 @@ class GarageListItem extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
-                        const TextSpan(text: 'Spaces: '),
+                        const TextSpan(text: 'Student Spaces: '),
                         TextSpan(text: '${garage.availableSpaces}'),
                       ],
                     ),
@@ -120,7 +119,7 @@ class GarageListItem extends StatelessWidget {
                       value: availability,
                       backgroundColor: Colors.grey[300],
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        availabilityColor,
+                        Colors.green,
                       ),
                       minHeight: 8,
                     ),
@@ -133,12 +132,5 @@ class GarageListItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // Helper method to determine color based on availability
-  Color _getColorBasedOnAvailability(double availability) {
-    if (availability > 0.5) return Colors.green;
-    if (availability > 0.2) return Colors.orange;
-    return Colors.red;
   }
 }

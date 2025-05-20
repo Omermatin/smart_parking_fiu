@@ -11,8 +11,9 @@ class ClassInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: AppColors.backgroundwidget,
       margin: const EdgeInsets.all(16.0),
-      elevation: 4,
+      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -69,7 +70,7 @@ class ClassInfoCard extends StatelessWidget {
                     Icons.info_outline,
                     'Status',
                     _isClassInProgress() ? 'In Progress' : 'Upcoming',
-                    color: _isClassInProgress() ? Colors.green : Colors.orange,
+                    color: Colors.black
                   ),
                 ),
               ],
@@ -100,7 +101,7 @@ class ClassInfoCard extends StatelessWidget {
                 value,
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  color: color ?? Colors.black87,
+                  color: color ?? Colors.black,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

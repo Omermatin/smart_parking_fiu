@@ -1,4 +1,3 @@
-
 import '../models/garage.dart';
 import '../models/class_schedule.dart';
 import '../models/building.dart';
@@ -106,66 +105,128 @@ void updateGaragesWithMetrics(
   }
 }
 
-List<Garage> sortGarages(List<Garage> garages) {
-  // Constants for threshold distances (in miles)
-  const double classDistanceThreshold = 0.2;
-  const double originDistanceThreshold = 0.2;
+double calculateAdaptiveScore(
+  Garage garage,
+  double minClassDistance,
+  double maxClassDistance,
+  double minOriginDistance,
+  double maxOriginDistance,
+  int minSpaces,
+  int maxSpaces, {
+  double classWeight = 0.63, // Increased weight for class distance
+  double originWeight = 0.1, // Moderate weight for origin distance
+  double spacesWeight = 0.27, // Reduced weight for spaces
+}) {
+  // Define what we consider "sufficient" spaces
+  const int sufficientSpaces =
+      100; // Minimum number of spaces to be considered sufficient
 
-  // Filter out garages with missing data
-  final filteredGarages =
-      garages.where((garage) {
-        return garage.distanceToClass != null &&
-            garage.distanceFromOrigin != null &&
-            garage.availableSpaces != null;
-      }).toList();
-
-  // First, sort all garages by distance to class
-  filteredGarages.sort(
-    (a, b) => a.distanceToClass!.compareTo(b.distanceToClass!),
+  // Calculate distance scores with exponential decay
+  double classDistanceScore = exp(
+    -2 * (garage.distanceToClass! / maxClassDistance),
+  );
+  double originDistanceScore = exp(
+    -2 * (garage.distanceFromOrigin! / maxOriginDistance),
   );
 
-  // Group garages that are within the threshold distance of each other
-  List<List<Garage>> groups = [];
-  List<Garage> currentGroup = [];
-
-  for (var garage in filteredGarages) {
-    if (currentGroup.isEmpty) {
-      currentGroup.add(garage);
-    } else {
-      // Check if this garage is within threshold distance of the first garage in the group
-      double diff =
-          (garage.distanceToClass! - currentGroup[0].distanceToClass!).abs();
-      if (diff <= classDistanceThreshold) {
-        currentGroup.add(garage);
-      } else {
-        // Start a new group
-        groups.add(currentGroup);
-        currentGroup = [garage];
-      }
-    }
-  }
-  // Add the last group if not empty
-  if (currentGroup.isNotEmpty) {
-    groups.add(currentGroup);
+  // Calculate space score with a threshold
+  double spaceScore;
+  if (garage.availableSpaces! >= sufficientSpaces) {
+    // If we have sufficient spaces, give a high score
+    spaceScore = 1.0;
+  } else {
+    // Otherwise, scale based on available spaces
+    spaceScore = garage.availableSpaces! / sufficientSpaces;
   }
 
-  // Sort each group by secondary criteria
-  for (var group in groups) {
-    group.sort((a, b) {
-      // PRIORITY 2: Distance from origin
-      final originDiff = (a.distanceFromOrigin! - b.distanceFromOrigin!).abs();
-      if (originDiff > originDistanceThreshold) {
-        return a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!);
-      }
+  // Calculate final score with adjusted weights
+  double score =
+      (classWeight * classDistanceScore) +
+      (originWeight * originDistanceScore) +
+      (spacesWeight * spaceScore);
 
-      // PRIORITY 3: Available spaces
-      return b.availableSpaces!.compareTo(a.availableSpaces!);
-    });
+  // Apply proximity bonus
+  const double proximityThreshold = 0.5; // 0.5 miles
+  if (garage.distanceToClass! <= proximityThreshold &&
+      garage.availableSpaces! >= sufficientSpaces) {
+    score *= 1.5; // 50% bonus for very close garages with sufficient spaces
   }
 
-  // Flatten the groups back into a single list
-  return groups.expand((group) => group).toList();
+  return score;
 }
+
+List<Garage> sortGaragesByAdaptiveScores(List<Garage> garages) {
+  if (garages.isEmpty) return [];
+
+  // Calculate min and max values for each factor
+  double minClassDistance = garages
+      .map((g) => g.distanceToClass!)
+      .reduce((a, b) => a < b ? a : b);
+  double maxClassDistance = garages
+      .map((g) => g.distanceToClass!)
+      .reduce((a, b) => a > b ? a : b);
+
+  double minOriginDistance = garages
+      .map((g) => g.distanceFromOrigin!)
+      .reduce((a, b) => a < b ? a : b);
+  double maxOriginDistance = garages
+      .map((g) => g.distanceFromOrigin!)
+      .reduce((a, b) => a > b ? a : b);
+
+  int minSpaces = garages
+      .map((g) => g.availableSpaces!)
+      .reduce((a, b) => a < b ? a : b);
+  int maxSpaces = garages
+      .map((g) => g.availableSpaces!)
+      .reduce((a, b) => a > b ? a : b);
+
+  // Calculate and store scores
+  final scoredGarages =
+      garages.map((garage) {
+        double score = calculateAdaptiveScore(
+          garage,
+          minClassDistance,
+          maxClassDistance,
+          minOriginDistance,
+          maxOriginDistance,
+          minSpaces,
+          maxSpaces,
+        );
+        return MapEntry(garage, score);
+      }).toList();
+
+  // Sort based on the calculated scores (descending)
+  scoredGarages.sort((a, b) {
+    if (a.value != b.value) {
+      return b.value.compareTo(a.value);
+    }
+    // If scores are equal, prioritize by:
+    // 1. Distance to class
+    if (a.key.distanceToClass != b.key.distanceToClass) {
+      return a.key.distanceToClass!.compareTo(b.key.distanceToClass!);
+    }
+    // 2. Available spaces
+    return b.key.availableSpaces!.compareTo(a.key.availableSpaces!);
+  });
+
+  return scoredGarages.map((entry) => entry.key).toList();
+}
+
+List<Garage> sortGaragesByDistance(List<Garage> garages) {
+  garages.sort((a, b) => a.distanceToClass!.compareTo(b.distanceToClass!));
+  return garages;
+}
+
+List<Garage> sortGaragesByAvailability(List<Garage> garages) {
+  garages.sort((a, b) => b.availableSpaces!.compareTo(a.availableSpaces!));
+  return garages;
+}
+
+List<Garage> sortGaragesByDistanceFromYou(List<Garage> garages) {
+  garages.sort((a, b) => a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!));
+  return garages;
+}
+
 
 Future<List<Garage>> recommendations(
   String pantherid,
@@ -202,7 +263,7 @@ Future<List<Garage>> recommendations(
   updateGaragesWithMetrics(availableGarages, building, latitude, longitude);
 
   // Use compute for sorting to avoid UI jank
-  final sorted = await compute(sortGarages, availableGarages);
+  final sorted = await compute(sortGaragesByAdaptiveScores, availableGarages);
 
   for (var garage in sorted) {
     debugPrint('Garage: ${garage.name}');
@@ -213,4 +274,3 @@ Future<List<Garage>> recommendations(
 
   return sorted;
 }
-

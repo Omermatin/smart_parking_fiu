@@ -9,6 +9,7 @@ class ClassSchedule {
   final String classSection;
   final String meetingDays;
   final String today;
+  final String pantherId;
 
   ClassSchedule({
     required this.courseName,
@@ -21,8 +22,9 @@ class ClassSchedule {
     required this.classSection,
     required this.meetingDays,
     required this.today,
+    required this.pantherId,
   });
-@override
+  @override
   String toString() {
     return '''
     📚 Course: $courseName
@@ -34,4 +36,4 @@ class ClassSchedule {
     🌞 Today: ${today == 'true' ? 'Yes' : 'No'}
     ''';
   }
-  }
+}

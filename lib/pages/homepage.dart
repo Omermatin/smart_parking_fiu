@@ -7,8 +7,8 @@ import '../util/building_parser.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF002D72);
-  static const Color background = Colors.white;
+  static const Color primary = Color.fromARGB(255, 2, 33, 80);
+  static const Color backgroundwidget = Colors.white;
   static const Color error = Colors.red;
   static const Color text = Color.fromARGB(255, 0, 0, 0);
 }
@@ -64,7 +64,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(239, 239, 239, 1),
+      backgroundColor: const Color.fromARGB(255, 249, 249, 250),
       body: GestureDetector(
         // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
@@ -137,7 +137,7 @@ class _HomepageState extends State<Homepage> {
                   onPressed: validateAndFetchGarages,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.background,
+                    foregroundColor: AppColors.backgroundwidget,
                   ),
                   child: const Text("Submit"),
                 ),

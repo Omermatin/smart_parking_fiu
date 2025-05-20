@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Garage {
   final String type;
   final String name;
@@ -10,6 +12,7 @@ class Garage {
   double? distanceFromOrigin;
   int? lotOtherMaxSpaces;
   int? lotOtherSpaces;
+  double? score;
 
   Garage({
     required this.type,
@@ -23,6 +26,7 @@ class Garage {
     this.distanceFromOrigin,
     this.lotOtherMaxSpaces = 0,
     this.lotOtherSpaces = 0,
+    this.score,
   });
   bool get isLot => type.toLowerCase() == 'lot';
   bool get isGarage => type.toLowerCase() == 'garage';
@@ -44,8 +48,8 @@ class Garage {
           ? calculateAvailableSpaces() / studentMaxSpaces
           : 0.0;
     } else if (isLot) {
-      return (lotOtherMaxSpaces ?? 1) > 0
-          ? calculateAvailableSpaces() / (lotOtherMaxSpaces ?? 1)
+      return lotOtherMaxSpaces != null && lotOtherMaxSpaces! > 0
+          ? calculateAvailableSpaces() / lotOtherMaxSpaces!
           : 0.0;
     }
     return 0.0;
@@ -58,6 +62,17 @@ class Garage {
 
   factory Garage.fromJson(Map<String, dynamic> jsonData) {
     final bool isLot = jsonData['type']?.toString().toLowerCase() == 'lot';
+
+    // Debug print for lot data
+    if (isLot) {
+      debugPrint('''
+Lot Data for ${jsonData['name']}:
+  otherSpaces: ${jsonData['otherSpaces']}
+  otherMaxSpaces: ${jsonData['otherMaxSpaces']}
+  Raw data: $jsonData
+''');
+    }
+
     return Garage(
       type: jsonData['type'] ?? '',
       name: jsonData['name'] ?? '',
