@@ -80,29 +80,67 @@ int calculateAvailability(Garage garage) {
   return garage.calculateAvailableSpaces();
 }
 
-void updateGaragesWithMetrics(
-  List<Garage> garages,
-  Building classBuilding,
-  double originLat,
-  double originLon,
-) {
+// Data class for passing parameters to compute function
+class GarageMetricsParams {
+  final List<Garage> garages;
+  final Building classBuilding;
+  final double originLat;
+  final double originLon;
+
+  GarageMetricsParams({
+    required this.garages,
+    required this.classBuilding,
+    required this.originLat,
+    required this.originLon,
+  });
+}
+
+// Function to be run in separate isolate
+List<Garage> _updateGaragesWithMetricsIsolate(GarageMetricsParams params) {
+  final garages = params.garages;
+  final classBuilding = params.classBuilding;
+  final originLat = params.originLat;
+  final originLon = params.originLon;
+
   for (var garage in garages) {
-    garage.distanceToClass = calculateDistance(
+    // Calculate distances once and store them
+    final classDistance = calculateDistance(
       classBuilding.latitude,
       classBuilding.longitude,
       garage.latitude,
       garage.longitude,
     );
 
-    garage.availableSpaces = calculateAvailability(garage);
-
-    garage.distanceFromOrigin = calculateDistance(
+    final originDistance = calculateDistance(
       originLat,
       originLon,
       garage.latitude,
       garage.longitude,
     );
+
+    garage.distanceToClass = classDistance;
+    garage.availableSpaces = calculateAvailability(garage);
+    garage.distanceFromOrigin = originDistance;
   }
+
+  return garages;
+}
+
+// Main function that uses compute
+Future<List<Garage>> updateGaragesWithMetrics(
+  List<Garage> garages,
+  Building classBuilding,
+  double originLat,
+  double originLon,
+) async {
+  final params = GarageMetricsParams(
+    garages: garages,
+    classBuilding: classBuilding,
+    originLat: originLat,
+    originLon: originLon,
+  );
+
+  return await compute(_updateGaragesWithMetricsIsolate, params);
 }
 
 double calculateAdaptiveScore(
@@ -113,15 +151,13 @@ double calculateAdaptiveScore(
   double maxOriginDistance,
   int minSpaces,
   int maxSpaces, {
-  double classWeight = 0.63, // Increased weight for class distance
-  double originWeight = 0.1, // Moderate weight for origin distance
-  double spacesWeight = 0.27, // Reduced weight for spaces
+  double classWeight = 0.63,
+  double originWeight = 0.1,
+  double spacesWeight = 0.27,
 }) {
-  // Define what we consider "sufficient" spaces
   const int sufficientSpaces =
-      100; // Minimum number of spaces to be considered sufficient
+      100;
 
-  // Calculate distance scores with exponential decay
   double classDistanceScore = exp(
     -2 * (garage.distanceToClass! / maxClassDistance),
   );
@@ -129,27 +165,22 @@ double calculateAdaptiveScore(
     -2 * (garage.distanceFromOrigin! / maxOriginDistance),
   );
 
-  // Calculate space score with a threshold
   double spaceScore;
   if (garage.availableSpaces! >= sufficientSpaces) {
-    // If we have sufficient spaces, give a high score
     spaceScore = 1.0;
   } else {
-    // Otherwise, scale based on available spaces
     spaceScore = garage.availableSpaces! / sufficientSpaces;
   }
 
-  // Calculate final score with adjusted weights
   double score =
       (classWeight * classDistanceScore) +
       (originWeight * originDistanceScore) +
       (spacesWeight * spaceScore);
 
-  // Apply proximity bonus
-  const double proximityThreshold = 0.5; // 0.5 miles
+  const double proximityThreshold = 0.5;
   if (garage.distanceToClass! <= proximityThreshold &&
       garage.availableSpaces! >= sufficientSpaces) {
-    score *= 1.5; // 50% bonus for very close garages with sufficient spaces
+    score *= 1.5;
   }
 
   return score;
@@ -158,7 +189,6 @@ double calculateAdaptiveScore(
 List<Garage> sortGaragesByAdaptiveScores(List<Garage> garages) {
   if (garages.isEmpty) return [];
 
-  // Calculate min and max values for each factor
   double minClassDistance = garages
       .map((g) => g.distanceToClass!)
       .reduce((a, b) => a < b ? a : b);
@@ -180,10 +210,8 @@ List<Garage> sortGaragesByAdaptiveScores(List<Garage> garages) {
       .map((g) => g.availableSpaces!)
       .reduce((a, b) => a > b ? a : b);
 
-  // Calculate and store scores
-  final scoredGarages =
-      garages.map((garage) {
-        double score = calculateAdaptiveScore(
+  final scoredGarages = garages.map((garage) {
+    double score = calculateAdaptiveScore(
           garage,
           minClassDistance,
           maxClassDistance,
@@ -195,17 +223,13 @@ List<Garage> sortGaragesByAdaptiveScores(List<Garage> garages) {
         return MapEntry(garage, score);
       }).toList();
 
-  // Sort based on the calculated scores (descending)
   scoredGarages.sort((a, b) {
     if (a.value != b.value) {
       return b.value.compareTo(a.value);
     }
-    // If scores are equal, prioritize by:
-    // 1. Distance to class
     if (a.key.distanceToClass != b.key.distanceToClass) {
       return a.key.distanceToClass!.compareTo(b.key.distanceToClass!);
     }
-    // 2. Available spaces
     return b.key.availableSpaces!.compareTo(a.key.availableSpaces!);
   });
 
@@ -223,10 +247,11 @@ List<Garage> sortGaragesByAvailability(List<Garage> garages) {
 }
 
 List<Garage> sortGaragesByDistanceFromYou(List<Garage> garages) {
-  garages.sort((a, b) => a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!));
+  garages.sort(
+    (a, b) => a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!),
+  );
   return garages;
 }
-
 
 Future<List<Garage>> recommendations(
   String pantherid,
@@ -234,43 +259,34 @@ Future<List<Garage>> recommendations(
   double latitude,
   ClassSchedule classSchedule,
 ) async {
-  // Load environment variables if needed
   if (dotenv.env.isEmpty) {
     await dotenv.load();
   }
 
-  // Fetch parking data
   final results = await fetchParking();
   if (results == null) {
     debugPrint("Failed to fetch parking data");
     return [];
   }
 
-  // Parse garages
   final availableGarages = GarageParser.parseGarages(results);
-
-  // Get class code from the passed classSchedule
   final classCode = classSchedule.buildingCode;
-
-  // Find building for the class
   final building = getBuildingByCode(classCode);
+
   if (building == null) {
     debugPrint("Building not found for class code: $classCode");
     return [];
   }
 
-  // Update metrics and sort garages
-  updateGaragesWithMetrics(availableGarages, building, latitude, longitude);
+  // Update metrics using compute
+  final updatedGarages = await updateGaragesWithMetrics(
+    availableGarages,
+    building,
+    latitude,
+    longitude,
+  );
 
-  // Use compute for sorting to avoid UI jank
-  final sorted = await compute(sortGaragesByAdaptiveScores, availableGarages);
-
-  for (var garage in sorted) {
-    debugPrint('Garage: ${garage.name}');
-    debugPrint('Distance: ${garage.distanceToClass} miles');
-    debugPrint('Spaces Available: ${garage.availableSpaces}');
-    debugPrint('Distance to Origin: ${garage.distanceFromOrigin} miles\n');
-  }
-
+  // Sort garages using compute
+  final sorted = await compute(sortGaragesByAdaptiveScores, updatedGarages);
   return sorted;
 }

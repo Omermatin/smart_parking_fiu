@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/garage.dart';
-import '../pages/homepage.dart'; // For AppColors
+import '../pages/homepage.dart';
 
 class GarageListItem extends StatelessWidget {
   final Garage garage;
 
   const GarageListItem({required this.garage, super.key});
 
-  // Helper method to format distance
   String formatDistance(double? distance) {
     if (distance == null) return 'N/A';
     return '${distance.toStringAsFixed(2)} miles';
@@ -15,7 +14,6 @@ class GarageListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate values once outside of widget tree to reduce build time
     final isLot = garage.type.toLowerCase() == 'lot';
     final availability = garage.calculateAvailabilityPercentage();
     return Card(

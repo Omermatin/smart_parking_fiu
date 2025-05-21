@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/class_schedule.dart';
-import '../pages/homepage.dart'; // For AppColors
+import '../pages/homepage.dart';
 import '../util/class_schedule_parser.dart';
 
 class ClassInfoCard extends StatelessWidget {

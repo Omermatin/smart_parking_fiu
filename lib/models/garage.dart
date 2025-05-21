@@ -31,7 +31,6 @@ class Garage {
   bool get isLot => type.toLowerCase() == 'lot';
   bool get isGarage => type.toLowerCase() == 'garage';
 
-  /// Calculate the number of available spaces
   int calculateAvailableSpaces() {
     if (isGarage) {
       return studentMaxSpaces - studentSpaces;
@@ -41,7 +40,6 @@ class Garage {
     return 0;
   }
 
-  /// Calculate the availability percentage (0.0 to 1.0)
   double calculateAvailabilityPercentage() {
     if (isGarage) {
       return studentMaxSpaces > 0
@@ -55,24 +53,12 @@ class Garage {
     return 0.0;
   }
 
-  /// Method to determine if the garage has available spaces
   bool hasAvailableSpaces() {
     return calculateAvailableSpaces() > 0;
   }
 
   factory Garage.fromJson(Map<String, dynamic> jsonData) {
     final bool isLot = jsonData['type']?.toString().toLowerCase() == 'lot';
-
-    // Debug print for lot data
-    if (isLot) {
-      debugPrint('''
-Lot Data for ${jsonData['name']}:
-  otherSpaces: ${jsonData['otherSpaces']}
-  otherMaxSpaces: ${jsonData['otherMaxSpaces']}
-  Raw data: $jsonData
-''');
-    }
-
     return Garage(
       type: jsonData['type'] ?? '',
       name: jsonData['name'] ?? '',
@@ -85,11 +71,5 @@ Lot Data for ${jsonData['name']}:
       lotOtherMaxSpaces:
           isLot ? int.tryParse(jsonData['otherMaxSpaces'] ?? '1') ?? 1 : 0,
     );
-  }
-
-  @override
-  String toString() {
-    return 'Garage(name: $name, Available: $studentSpaces/$studentMaxSpaces, '
-        'Location: ($latitude, $longitude))';
   }
 }

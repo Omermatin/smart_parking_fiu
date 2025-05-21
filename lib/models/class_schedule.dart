@@ -24,16 +24,4 @@ class ClassSchedule {
     required this.today,
     required this.pantherId,
   });
-  @override
-  String toString() {
-    return '''
-    📚 Course: $courseName
-    📌 Subject: $subject $catalogNumber - Section $classSection
-    📅 Days: $meetingDays
-    ⏰ Time: $meetingTimeStart - $meetingTimeEnd
-    🏛️ Location: $buildingCode
-    🌐 Mode: $mode
-    🌞 Today: ${today == 'true' ? 'Yes' : 'No'}
-    ''';
-  }
 }

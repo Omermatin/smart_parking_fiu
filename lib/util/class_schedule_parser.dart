@@ -1,4 +1,3 @@
-// parsers/class_schedule_parser.dart
 import '../models/class_schedule.dart';
 
 class ClassScheduleParser {
@@ -16,7 +15,6 @@ class ClassScheduleParser {
       for (var classItem in classes) {
         final meetings = classItem['meetings'] as List<dynamic>;
 
-        // Only consider meetings marked as "today": "true"
         final validMeetings =
             meetings
                 .where(
@@ -26,7 +24,7 @@ class ClassScheduleParser {
                 .toList();
 
         if (validMeetings.isEmpty) {
-          continue; // Skip if no valid meetings for today
+          continue;
         }
 
         for (var meeting in validMeetings) {
@@ -36,7 +34,6 @@ class ClassScheduleParser {
           final startTime = parseTime(startTimeStr);
           final endTime = parseTime(endTimeStr);
 
-          // Create a temporary class object with only the relevant meeting
           final temporaryClass = ClassSchedule(
             courseName: classItem['courseName'] ?? '',
             meetingTimeStart: startTimeStr,
@@ -50,14 +47,11 @@ class ClassScheduleParser {
             today: meeting['today'] = "true",
             pantherId: studentJson['pantherId'] ?? '',
           );
-
-          // If the class is ongoing, we immediately return it
           if (startTime != null && endTime != null) {
             if (now.isAfter(startTime) && now.isBefore(endTime)) {
-              return temporaryClass; // Ongoing class with valid meeting
+              return temporaryClass;
             }
 
-            // If not ongoing, but it is upcoming
             if (now.isBefore(startTime)) {
               if (nextClass == null ||
                   parseTime(nextClass.meetingTimeStart)!.isAfter(startTime)) {
@@ -69,11 +63,9 @@ class ClassScheduleParser {
       }
     }
 
-    // If no ongoing class is found, return the next upcoming class
-    return nextClass; // This will be null if no upcoming classes exist
+    return nextClass;
   }
 
-  // Public method for parsing time
   static DateTime? parseTime(String timeStr) {
     if (timeStr.isEmpty) return null;
 
@@ -86,7 +78,7 @@ class ClassScheduleParser {
     int minute = int.parse(match.group(2)!);
     String period = match.group(3)!;
 
-    if (period == 'PM' && hour != 12) hour += 12;
+    if (period == 'PM' && hour != 12) hour += 13;
     if (period == 'AM' && hour == 12) hour = 0;
 
     final now = DateTime.now();

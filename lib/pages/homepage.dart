@@ -4,6 +4,7 @@ import '../models/garage.dart';
 import '../util/class_schedule_parser.dart';
 import '../util/logic.dart';
 import '../util/building_parser.dart';
+import '../util/garage_parser.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
@@ -23,32 +24,19 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   final TextEditingController idController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final List<String> validPantherIds = [
-    '1111111',
-    '2222222',
-    '3333333',
-    '4444444',
-    '5555555',
-    '6666666',
-    '7777777',
-    '8888888',
-    '9999999',
-  ];
+
   @override
   void initState() {
     super.initState();
-    // Initialize building cache and location service
     Future.wait([
       BuildingCache.initialize(),
       LocationService.initializeUserLocation(),
-    ]).catchError((error) {
-      debugPrint('Error initializing services: $error');
-    });
+    ]);
   }
 
-  // Helper method to check if an ID is valid
   bool isValidPantherId(String id) {
-    return validPantherIds.contains(id.trim());
+    // Panther ID must be exactly 7 digits
+    return RegExp(r'^\d{7}$').hasMatch(id.trim());
   }
 
   bool isLoading = false;
@@ -66,7 +54,6 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 249, 249, 250),
       body: GestureDetector(
-        // Unfocus when tapping outside
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
           padding: const EdgeInsets.all(30),
@@ -88,36 +75,33 @@ class _HomepageState extends State<Homepage> {
             ),
             const SizedBox(height: 100),
 
-            // Form with validation
             Form(
               key: _formKey,
               child: TextFormField(
                 style: TextStyle(color: AppColors.text),
                 controller: idController,
                 keyboardType: TextInputType.number,
+                maxLength: 7, // Limit to 7 digits
                 decoration: const InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
                   labelText: "Enter Your Student ID",
                   labelStyle: TextStyle(color: AppColors.primary),
-                  hintText: "e.g. 1111111",
+                  hintText: "e.g. 1234567",
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.primary),
                   ),
+                  counterText: "", // Hide the character counter
                 ),
-                // validation
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Please enter your Student ID";
-                  } else if (!RegExp(r'^\d+$').hasMatch(value)) {
-                    return "ID must be numeric";
                   } else if (!isValidPantherId(value)) {
-                    return "Invalid Panther ID. Please enter a valid ID.";
+                    return "Please enter a valid 7-digit Panther ID";
                   }
                   return null;
                 },
-                // Clear the previous error on change
                 onChanged: (_) {
                   setState(() {
                     errorMessage = '';
@@ -128,7 +112,6 @@ class _HomepageState extends State<Homepage> {
 
             const SizedBox(height: 25),
 
-            // Submit Button with loading state
             isLoading
                 ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
@@ -142,7 +125,6 @@ class _HomepageState extends State<Homepage> {
                   child: const Text("Submit"),
                 ),
 
-            // Error Message Display - for network/API errors
             if (errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -157,19 +139,15 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  // Refactored validation and data fetching method with compute
   void validateAndFetchGarages() async {
     setState(() {
       errorMessage = '';
-      isLoading = true; // Start loading immediately
+      isLoading = true;
     });
 
-    // Unfocus keyboard
-
-    // Validate form first - this handles both format and valid ID checks
     if (!_formKey.currentState!.validate()) {
       setState(() {
-        isLoading = false; // Stop loading if validation fails
+        isLoading = false;
       });
       return;
     }
@@ -177,7 +155,6 @@ class _HomepageState extends State<Homepage> {
     final enteredId = idController.text.trim();
 
     try {
-      // Get position outside of setState
       final userPosition = LocationService.currentPosition;
 
       if (userPosition == null) {
@@ -188,11 +165,11 @@ class _HomepageState extends State<Homepage> {
         return;
       }
 
-      // First fetch the class schedule
+      // First try to fetch the class schedule to validate the Panther ID
       final classJson = await fetchUsers(enteredId);
       if (classJson == null) {
         setState(() {
-          errorMessage = "Failed to fetch class schedule";
+          errorMessage = "Invalid Panther ID or no classes found";
           isLoading = false;
         });
         return;
@@ -209,7 +186,22 @@ class _HomepageState extends State<Homepage> {
         return;
       }
 
-      // Call recommendations to get parking options
+      final results = await Future.wait<dynamic>([
+        fetchParking(),
+        BuildingCache.initialize(),
+      ]);
+
+      final parkingData = results[0];
+      if (parkingData == null) {
+        setState(() {
+          errorMessage = "Failed to fetch parking data";
+          isLoading = false;
+        });
+        return;
+      }
+
+      final availableGarages = GarageParser.parseGarages(parkingData);
+
       final result = await recommendations(
         enteredId,
         userPosition.longitude,
@@ -220,10 +212,6 @@ class _HomepageState extends State<Homepage> {
       if (result is List) {
         final garageResults = result.cast<Garage>();
 
-        // Only set isLoading to false AFTER navigation
-        // This prevents the button from flashing
-
-        // Navigate to the recommendations page
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -234,17 +222,12 @@ class _HomepageState extends State<Homepage> {
                 ),
           ),
         ).then((_) {
-          // Set loading to false after returning from recommendations page
           if (mounted) {
             setState(() {
               isLoading = false;
             });
           }
         });
-
-        debugPrint(
-          "Recommendations fetched successfully: ${garageResults.length} garages",
-        );
       } else {
         setState(() {
           errorMessage = "Failed to get recommendations";

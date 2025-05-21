@@ -14,5 +14,3 @@ class Building {
     return 'Building(code: $name, Location: ($latitude, $longitude))';
   }
 }
-
-List<Building> buildings = [];
