@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/garage.dart';
 import '../models/class_schedule.dart';
-import '../pages/homepage.dart';  
+import '../pages/homepage.dart';
 import '../widgets/garage_list_item.dart';
 import '../widgets/class_info_card.dart';
 import '../widgets/empty_recommendations.dart';
@@ -36,26 +36,49 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
 
   void _sortByDistanceFromClass() {
     setState(() {
-      isActive = "Distance from class";
-      _currentRecommendations = sortGaragesByDistance(_currentRecommendations);
+      if (isActive == "Distance from class") {
+        isActive = "";
+        _currentRecommendations = sortGaragesByAdaptiveScores(
+          widget.recommendations,
+        );
+      } else {
+        isActive = "Distance from class";
+        _currentRecommendations = sortGaragesByDistance(
+          _currentRecommendations,
+        );
+      }
     });
   }
 
   void _sortByAvailability() {
     setState(() {
-      isActive = "Availability";
-      _currentRecommendations = sortGaragesByAvailability(
-        _currentRecommendations,
-      );
+      if (isActive == "Availability") {
+        isActive = "";
+        _currentRecommendations = sortGaragesByAdaptiveScores(
+          widget.recommendations,
+        );
+      } else {
+        isActive = "Availability";
+        _currentRecommendations = sortGaragesByAvailability(
+          _currentRecommendations,
+        );
+      }
     });
   }
 
   void _sortByDistanceFromYou() {
     setState(() {
-      isActive = "Distance from you";
-      _currentRecommendations = sortGaragesByDistanceFromYou(
-        _currentRecommendations,
-      );
+      if (isActive == "Distance from you") {
+        isActive = "";
+        _currentRecommendations = sortGaragesByAdaptiveScores(
+          widget.recommendations,
+        );
+      } else {
+        isActive = "Distance from you";
+        _currentRecommendations = sortGaragesByDistanceFromYou(
+          _currentRecommendations,
+        );
+      }
     });
   }
 
@@ -66,7 +89,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
     });
 
     try {
-    
       final position = await Geolocator.getCurrentPosition();
 
       final newRecommendations = await recommendations(
@@ -139,39 +161,39 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
                     MyButton(
                       text: "Distance from class",
                       onPressed: _sortByDistanceFromClass,
-                      color: isActive == "Distance from class"
-                          ? AppColors.primary
-                          : null,
-                      textColor: isActive == "Distance from class"
-                          ? Colors.white
-                          : null,
+                      color:
+                          isActive == "Distance from class"
+                              ? AppColors.primary
+                              : null,
+                      textColor:
+                          isActive == "Distance from class"
+                              ? Colors.white
+                              : null,
                     ),
                     const SizedBox(width: 8),
                     MyButton(
                       text: "Availability",
                       onPressed: _sortByAvailability,
-                      color: isActive == "Availability"
-                          ? AppColors.primary
-                          : null,
-                      textColor: isActive == "Availability"
-                          ? Colors.white
-                          : null,
+                      color:
+                          isActive == "Availability" ? AppColors.primary : null,
+                      textColor:
+                          isActive == "Availability" ? Colors.white : null,
                     ),
                     const SizedBox(width: 8),
                     MyButton(
                       text: "Distance from you",
                       onPressed: _sortByDistanceFromYou,
-                      color: isActive == "Distance from you"
-                          ? AppColors.primary
-                          : null,
-                      textColor: isActive == "Distance from you"
-                          ? Colors.white
-                          : null,
+                      color:
+                          isActive == "Distance from you"
+                              ? AppColors.primary
+                              : null,
+                      textColor:
+                          isActive == "Distance from you" ? Colors.white : null,
                     ),
                   ],
                 ),
               ),
-  
+
               if (_currentRecommendations.isEmpty)
                 const EmptyRecommendations()
               else
