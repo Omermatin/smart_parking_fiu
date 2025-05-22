@@ -177,7 +177,7 @@ double calculateAdaptiveScore(
       (originWeight * originDistanceScore) +
       (spacesWeight * spaceScore);
 
-  const double proximityThreshold = 0.5;
+  const double proximityThreshold = 0.3;
   if (garage.distanceToClass! <= proximityThreshold &&
       garage.availableSpaces! >= sufficientSpaces) {
     score *= 1.5;
