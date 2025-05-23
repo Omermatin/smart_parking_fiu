@@ -61,9 +61,17 @@ class GarageListItem extends StatelessWidget {
                         color: Colors.grey[700],
                         fontWeight: FontWeight.bold,
                       ),
+                      // children: [
+                      //   const TextSpan(text: 'Student Spaces: '),
+                      //   TextSpan(text: '${garage.availableSpaces}'),
+                      // ],
                       children: [
-                        const TextSpan(text: 'Student Spaces: '),
-                        TextSpan(text: '${garage.availableSpaces}'),
+                        TextSpan(
+                          text:
+                              isLot
+                                  ? 'All Spaces: ${garage.availableSpaces}'
+                                  : 'Student Spaces: ${garage.availableSpaces}',
+                        ),
                       ],
                     ),
                   ),
@@ -116,9 +124,7 @@ class GarageListItem extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: availability,
                       backgroundColor: Colors.grey[300],
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.green,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                       minHeight: 8,
                     ),
                   ),

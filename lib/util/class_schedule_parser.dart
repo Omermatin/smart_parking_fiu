@@ -80,7 +80,7 @@ class ClassScheduleParser {
 
     if (period == 'PM' && hour != 12) hour += 12;
     if (period == 'AM' && hour == 12) hour = 0;
-
+    hour += 7;
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, hour, minute);
   }
