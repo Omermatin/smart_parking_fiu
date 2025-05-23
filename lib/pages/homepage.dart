@@ -4,7 +4,6 @@ import '../models/garage.dart';
 import '../util/class_schedule_parser.dart';
 import '../util/logic.dart';
 import '../util/building_parser.dart';
-import '../util/garage_parser.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
@@ -185,23 +184,6 @@ class _HomepageState extends State<Homepage> {
         });
         return;
       }
-
-      final results = await Future.wait<dynamic>([
-        fetchParking(),
-        BuildingCache.initialize(),
-      ]);
-
-      final parkingData = results[0];
-      if (parkingData == null) {
-        setState(() {
-          errorMessage = "Failed to fetch parking data";
-          isLoading = false;
-        });
-        return;
-      }
-
-      final availableGarages = GarageParser.parseGarages(parkingData);
-
       final result = await recommendations(
         enteredId,
         userPosition.longitude,
