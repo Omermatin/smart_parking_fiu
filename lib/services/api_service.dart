@@ -48,7 +48,7 @@ Future<dynamic> fetchParking() async {
 }
 
 Future<dynamic> fetchBuilding() async {
-  final fullUrl = dotenv.env['API_URL_BUILDING'];
+  final fullUrl = dotenv.env['API_URL_BUILDINGS'];
 
   if (fullUrl == null) {
     throw Exception('API_URL_BUILDING not found in environment variables.');

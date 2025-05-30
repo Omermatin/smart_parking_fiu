@@ -109,6 +109,7 @@ Future<List<Garage>> getAIRecommendations(
 
     // 5. Send data to n8n
     final n8nUrl = dotenv.env['N8N_WEBHOOK_URL'];
+
     if (n8nUrl == null) {
       debugPrint('❌ N8N_WEBHOOK_URL not found in environment variables');
       return [];
