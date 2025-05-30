@@ -6,17 +6,18 @@ import '../widgets/garage_list_item.dart';
 import '../widgets/class_info_card.dart';
 import '../widgets/empty_recommendations.dart';
 import '../util/logic.dart';
+import '../util/class_schedule_parser.dart';
 import 'package:geolocator/geolocator.dart';
-import '../widgets/buttons.dart';
+import '../services/api_service.dart';
 
 class RecommendationsPage extends StatefulWidget {
   final List<Garage> recommendations;
-  final ClassSchedule classSchedule;
+  final Map<String, dynamic> fullScheduleJson;
 
   const RecommendationsPage({
     super.key,
     required this.recommendations,
-    required this.classSchedule,
+    required this.fullScheduleJson,
   });
 
   @override
@@ -26,76 +27,40 @@ class RecommendationsPage extends StatefulWidget {
 class _RecommendationsPageState extends State<RecommendationsPage> {
   List<Garage> _currentRecommendations = [];
   bool _isRefreshing = false;
-  String isActive = "";
+  ClassSchedule? _currentClass;
 
   @override
   void initState() {
     super.initState();
     _currentRecommendations = widget.recommendations;
-  }
-
-  void _sortByDistanceFromClass() {
-    setState(() {
-      if (isActive == "Distance from class") {
-        isActive = "";
-        _currentRecommendations = sortGaragesByAdaptiveScores(
-          widget.recommendations,
-        );
-      } else {
-        isActive = "Distance from class";
-        _currentRecommendations = sortGaragesByDistance(
-          _currentRecommendations,
-        );
-      }
-    });
-  }
-
-  void _sortByAvailability() {
-    setState(() {
-      if (isActive == "Availability") {
-        isActive = "";
-        _currentRecommendations = sortGaragesByAdaptiveScores(
-          widget.recommendations,
-        );
-      } else {
-        isActive = "Availability";
-        _currentRecommendations = sortGaragesByAvailability(
-          _currentRecommendations,
-        );
-      }
-    });
-  }
-
-  void _sortByDistanceFromYou() {
-    setState(() {
-      if (isActive == "Distance from you") {
-        isActive = "";
-        _currentRecommendations = sortGaragesByAdaptiveScores(
-          widget.recommendations,
-        );
-      } else {
-        isActive = "Distance from you";
-        _currentRecommendations = sortGaragesByDistanceFromYou(
-          _currentRecommendations,
-        );
-      }
-    });
+    _currentClass = ClassScheduleParser.getCurrentOrUpcomingClass(
+      widget.fullScheduleJson,
+    );
   }
 
   Future<void> _refreshRecommendations() async {
     setState(() {
-      isActive = "";
       _isRefreshing = true;
     });
 
     try {
       final position = await Geolocator.getCurrentPosition();
 
-      final newRecommendations = await recommendations(
-        widget.classSchedule.pantherId,
+      if (_currentClass == null) {
+        throw Exception('No current class available');
+      }
+
+      final todaySchedule = ClassScheduleParser.getAllTodayClasses(
+        widget.fullScheduleJson,
+      );
+
+      final newRecommendations = await getAIRecommendations(
+        _currentClass!.pantherId,
         position.longitude,
         position.latitude,
-        widget.classSchedule,
+        todaySchedule,
+        await fetchParking(),
+        await fetchBuilding(),
       );
 
       setState(() {
@@ -122,7 +87,7 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 249, 249, 250),
       appBar: AppBar(
-        title: const Text('Parking Recommendations'),
+        title: const Text('AI Parking Recommendations'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -132,14 +97,15 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
           onRefresh: _refreshRecommendations,
           child: ListView(
             children: [
-              ClassInfoCard(classSchedule: widget.classSchedule),
+              if (_currentClass != null)
+                ClassInfoCard(classSchedule: _currentClass!),
 
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     const Text(
-                      'Recommended Parking',
+                      'AI-Powered Recommendations',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -149,46 +115,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
                     Text(
                       '${_currentRecommendations.length} options',
                       style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 8),
-                    MyButton(
-                      text: "Distance from class",
-                      onPressed: _sortByDistanceFromClass,
-                      color:
-                          isActive == "Distance from class"
-                              ? AppColors.primary
-                              : null,
-                      textColor:
-                          isActive == "Distance from class"
-                              ? Colors.white
-                              : null,
-                    ),
-                    const SizedBox(width: 8),
-                    MyButton(
-                      text: "Availability",
-                      onPressed: _sortByAvailability,
-                      color:
-                          isActive == "Availability" ? AppColors.primary : null,
-                      textColor:
-                          isActive == "Availability" ? Colors.white : null,
-                    ),
-                    const SizedBox(width: 8),
-                    MyButton(
-                      text: "Distance from you",
-                      onPressed: _sortByDistanceFromYou,
-                      color:
-                          isActive == "Distance from you"
-                              ? AppColors.primary
-                              : null,
-                      textColor:
-                          isActive == "Distance from you" ? Colors.white : null,
                     ),
                   ],
                 ),

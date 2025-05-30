@@ -1,29 +1,19 @@
 import '../models/building.dart';
-import '../services/api_service.dart';
 
 class BuildingCache {
-  static List<Building>? _buildings;
+  static List<Building> _buildings = [];
   static bool _isInitialized = false;
 
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
-
-    final jsonData = await fetchBuilding();
-    if (jsonData == null) {
-      _buildings = [];
-    } else {
-      _buildings = BuildingParser.parseBuildings(jsonData);
-    }
+  static void initialize(List<dynamic> buildingData) {
+    _buildings = BuildingParser.parseBuildings(buildingData);
     _isInitialized = true;
   }
 
   static List<Building> getBuildings() {
     if (!_isInitialized) {
-      throw Exception(
-        'BuildingCache not initialized. Call initialize() first.',
-      );
+      return [];
     }
-    return _buildings ?? [];
+    return _buildings;
   }
 }
 
@@ -36,18 +26,17 @@ class BuildingParser {
         .map(
           (entry) => Building(
             name: entry['buildingCode'] ?? '',
-            latitude: double.tryParse(entry['latitude'] ?? '0') ?? 0,
-            longitude: double.tryParse(entry['longitude'] ?? '0') ?? 0,
+            latitude:
+                double.tryParse(entry['latitude']?.toString() ?? '0') ?? 0,
+            longitude:
+                double.tryParse(entry['longitude']?.toString() ?? '0') ?? 0,
           ),
         )
         .toList();
   }
 }
-Building? getBuildingByCode(String buildingCode) {
-  if (!BuildingCache._isInitialized) {
-    throw Exception('BuildingCache not initialized. Call initialize() first.');
-  }
 
+Building? getBuildingByCode(String buildingCode) {
   try {
     return BuildingCache.getBuildings().firstWhere(
       (b) => b.name.toUpperCase() == buildingCode.toUpperCase(),

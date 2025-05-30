@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
 import '../services/api_service.dart';
 import '../models/garage.dart';
-import '../util/class_schedule_parser.dart';
 import '../util/logic.dart';
-import '../util/building_parser.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
-  static const Color primary = Color.fromARGB(255, 2, 33, 80);
+  static const Color primary = Color.fromARGB(255, 9, 31, 63);
   static const Color backgroundwidget = Colors.white;
   static const Color error = Colors.red;
   static const Color text = Color.fromARGB(255, 0, 0, 0);
@@ -27,10 +26,8 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    Future.wait([
-      BuildingCache.initialize(),
-      LocationService.initializeUserLocation(),
-    ]);
+    // Only initialize location service
+    LocationService.initializeUserLocation();
   }
 
   bool isValidPantherId(String id) {
@@ -51,7 +48,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 249, 249, 250),
+      backgroundColor: const Color.fromARGB(255, 242, 242, 247),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -83,7 +80,7 @@ class _HomepageState extends State<Homepage> {
                 maxLength: 7, // Limit to 7 digits
                 decoration: const InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Color.fromARGB(255, 227, 227, 232),
                   labelText: "Enter Your Student ID",
                   labelStyle: TextStyle(color: AppColors.primary),
                   hintText: "e.g. 1234567",
@@ -144,7 +141,10 @@ class _HomepageState extends State<Homepage> {
       isLoading = true;
     });
 
+    debugPrint('🚀 Submit button pressed');
+
     if (!_formKey.currentState!.validate()) {
+      debugPrint('❌ Form validation failed');
       setState(() {
         isLoading = false;
       });
@@ -152,55 +152,72 @@ class _HomepageState extends State<Homepage> {
     }
 
     final enteredId = idController.text.trim();
+    debugPrint('✅ Form validated. Student ID: $enteredId');
 
     try {
       final userPosition = LocationService.currentPosition;
 
       if (userPosition == null) {
+        debugPrint('❌ Location not available');
         setState(() {
           errorMessage = "Location services not available";
           isLoading = false;
         });
         return;
       }
+      debugPrint(
+        '✅ Location available: ${userPosition.latitude}, ${userPosition.longitude}',
+      );
 
-      // First try to fetch the class schedule to validate the Panther ID
+      // Start parking & building fetches immediately
+      final parkingFuture = fetchParking();
+      final buildingFuture = fetchBuilding();
+
+      // Fetch the class schedule to validate the Panther ID
+      debugPrint('📚 Fetching class schedule...');
       final classJson = await fetchUsers(enteredId);
       if (classJson == null) {
+        debugPrint('❌ No class data returned from API');
         setState(() {
           errorMessage = "Invalid Panther ID or no classes found";
           isLoading = false;
         });
         return;
       }
-
-      final classSchedule = ClassScheduleParser.getCurrentOrUpcomingClass(
-        classJson,
-      );
-      if (classSchedule == null) {
+      debugPrint('✅ Class schedule fetched successfully');
+      final todaySchedule = ClassScheduleParser.getAllTodayClasses(classJson);
+      if (todaySchedule.isEmpty) {
+        debugPrint('❌ No today schedule found');
         setState(() {
-          errorMessage = "No current or upcoming classes found";
+          errorMessage = "You have no classes today! No need to park :)";
           isLoading = false;
         });
         return;
       }
-      final result = await recommendations(
+      // Get AI-powered recommendations
+      debugPrint('🤖 Calling getAIRecommendations...');
+      final result = await getAIRecommendations(
         enteredId,
         userPosition.longitude,
         userPosition.latitude,
-        classSchedule,
+        todaySchedule,
+        parkingFuture,
+        buildingFuture,
       );
+      debugPrint('🤖 getAIRecommendations returned ${result.length} garages');
 
-      if (result is List) {
-        final garageResults = result.cast<Garage>();
-
+      if (result.isNotEmpty) {
+        if (!mounted) {
+          return;
+        }
+        debugPrint('✅ Navigating to recommendations page');
         Navigator.push(
           context,
           MaterialPageRoute(
             builder:
                 (context) => RecommendationsPage(
-                  recommendations: garageResults,
-                  classSchedule: classSchedule,
+                  recommendations: result,
+                  fullScheduleJson: classJson,
                 ),
           ),
         ).then((_) {
@@ -211,12 +228,14 @@ class _HomepageState extends State<Homepage> {
           }
         });
       } else {
+        debugPrint('❌ No recommendations returned');
         setState(() {
           errorMessage = "Failed to get recommendations";
           isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('💥 Error in validateAndFetchGarages: $e');
       setState(() {
         errorMessage = "Error: $e";
         isLoading = false;

@@ -21,9 +21,7 @@ class MyApp extends StatelessWidget {
       title: 'FIU Smart Parking',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
       ),
       home: const Homepage(),
     );

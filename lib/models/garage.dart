@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class Garage {
   final String type;
   final String name;

@@ -70,7 +70,7 @@ class ClassInfoCard extends StatelessWidget {
                     Icons.info_outline,
                     'Status',
                     _isClassInProgress() ? 'In Progress' : 'Upcoming',
-                    color: Colors.black
+                    color: Colors.black,
                   ),
                 ),
               ],
