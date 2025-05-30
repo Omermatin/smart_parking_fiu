@@ -72,7 +72,7 @@ Future<List<Garage>> getAIRecommendations(
 
     // 1. Fetch parking & building together
     debugPrint('📋 Fetching parking + building in parallel…');
-
+    // 1. Fetch parking & building together
     final results = await Future.wait([parkingFuture, buildingFuture]);
 
     final parkingResults = results[0];

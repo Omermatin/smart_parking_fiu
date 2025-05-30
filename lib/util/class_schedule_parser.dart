@@ -58,7 +58,7 @@ class ClassScheduleParser {
   ) {
     final List<ClassSchedule> todayClasses = [];
     final terms = studentJson['terms'] as List<dynamic>;
-
+    final now = DateTime.now();
     for (var term in terms) {
       final classes = term['classes'] as List<dynamic>;
 
@@ -80,6 +80,13 @@ class ClassScheduleParser {
                 .toList();
 
         for (var meeting in validMeetings) {
+          final start = parseTime(meeting['meetingTimeStart'] ?? '');
+          final end = parseTime(meeting['meetingTimeEnd'] ?? '');
+
+          // 👇 Skip meetings that are already over
+          if (start == null || end == null) continue;
+          if (now.isAfter(end)) continue;
+
           final classSchedule = ClassSchedule(
             courseName: classItem['courseName'] ?? '',
             meetingTimeStart: meeting['meetingTimeStart'] ?? '',
