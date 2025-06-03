@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
 import '../services/api_service.dart';
 import '../models/garage.dart';
@@ -48,8 +49,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF2F2F7)
-    ,
+      backgroundColor: Color(0xFFF2F2F7),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -67,8 +67,7 @@ class _HomepageState extends State<Homepage> {
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 20,
-                fontWeight: FontWeight.w700
-              
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 90),
@@ -111,8 +110,13 @@ class _HomepageState extends State<Homepage> {
             const SizedBox(height: 25),
 
             isLoading
-                ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                ? Center(
+                  child: Lottie.asset(
+                    'assets/Animation - 1748970341722 (2).json',
+                    width: 100,
+                    height: 100,
+                    repeat: true,
+                  ),
                 )
                 : ElevatedButton(
                   onPressed: validateAndFetchGarages,
