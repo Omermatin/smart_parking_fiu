@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/class_schedule.dart';
+import 'dart:math';
+import '../util/building_parser.dart';
 
 class LocationService {
   static Position? _currentPosition;
@@ -58,6 +60,24 @@ class LocationService {
   static Position? get currentPosition => _currentPosition;
 }
 
+// Function to calculate the distance between two points using the Haversine formula
+// Returns the distance in meters
+num calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  const earthRadius = 6371000; // Earth's radius in meters
+  final dLat = (lat2 - lat1) * (pi / 180);
+  final dLon = (lon2 - lon1) * (pi / 180);
+
+  final a =
+      sin(dLat / 2) * sin(dLat / 2) +
+      cos(lat1 * (pi / 180)) *
+          cos(lat2 * (pi / 180)) *
+          sin(dLon / 2) *
+          sin(dLon / 2);
+
+  final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return earthRadius * c;
+}
+
 // Simple function to get ranked garages from n8n
 Future<List<Garage>> getAIRecommendations(
   String pantherId,
@@ -93,19 +113,35 @@ Future<List<Garage>> getAIRecommendations(
     debugPrint('📚 Parsing today\'s classes...');
     final allTodayClasses = todaySchedule;
     debugPrint('✅ Found ${allTodayClasses.length} classes for today');
+    debugPrint(
+      '📚 Class building codes: ${allTodayClasses.map((c) => c.buildingCode).join(", ")}',
+    );
 
     // 4. Filter buildings to only those matching codes in today's classes
     final Set<String> todayBuildingCodes =
         allTodayClasses.map((c) => c.buildingCode.trim().toUpperCase()).toSet();
 
+    debugPrint(
+      '🏛️ Raw building data count: ${(buildingResults as List<dynamic>).length}',
+    );
+    debugPrint(
+      '🏛️ Raw building codes: ${buildingResults.map((b) => b['buildingCode']).join(", ")}',
+    );
+
     final filteredBuildings =
-        (buildingResults as List<dynamic>).where((b) {
+        buildingResults.where((b) {
           final code =
               (b['buildingCode'] ?? '').toString().trim().toUpperCase();
           return todayBuildingCodes.contains(code);
         }).toList();
 
     debugPrint('🏢 Filtered buildings count: ${filteredBuildings.length}');
+    debugPrint(
+      '🏢 Filtered building codes: ${filteredBuildings.map((b) => b['buildingCode']).join(", ")}',
+    );
+
+    // Initialize building cache with ALL buildings, not just filtered ones
+    BuildingCache.initialize(buildingResults);
 
     // 5. Send data to n8n
     final n8nUrl = dotenv.env['N8N_WEBHOOK_URL'];
@@ -115,6 +151,7 @@ Future<List<Garage>> getAIRecommendations(
       return [];
     }
     debugPrint('🔗 N8N URL found: $n8nUrl');
+    debugPrint('📤 Sending request to n8n...');
 
     final requestBody = jsonEncode({
       'student_id': pantherId,
@@ -126,6 +163,30 @@ Future<List<Garage>> getAIRecommendations(
                   'building_code': c.buildingCode,
                   'meeting_time_start': c.meetingTimeStart,
                   'meeting_time_end': c.meetingTimeEnd,
+                  'distances_to_garages':
+                      availableGarages
+                          .map(
+                            (g) => {
+                              'garage_name': g.name,
+                              'distance': () {
+                                final building = getBuildingByCode(
+                                  c.buildingCode,
+                                );
+                                if (building == null) {
+                                  throw Exception(
+                                    'Building with code \\${c.buildingCode} not found.',
+                                  );
+                                }
+                                return calculateDistance(
+                                  building.latitude,
+                                  building.longitude,
+                                  g.latitude,
+                                  g.longitude,
+                                );
+                              }(),
+                            },
+                          )
+                          .toList(),
                 },
               )
               .toList(),
@@ -155,55 +216,69 @@ Future<List<Garage>> getAIRecommendations(
               .toList(),
     });
 
-    final response = await http.post(
-      Uri.parse(n8nUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: requestBody,
-    );
+    debugPrint('📦 Request payload: $requestBody');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> responseData = jsonDecode(response.body);
-      //debugPrint('✅ Received ${responseData.length} items from n8n');
+    try {
+      final response = await http.post(
+        Uri.parse(n8nUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+      );
 
-      // n8n returns: [{"output": [garage1, garage2...]}]
-      // We need to access responseData[0]["output"]
-      final List<dynamic> garageArray = responseData[0]['output'];
-      //debugPrint('✅ Found ${garageArray.length} garages in output');
+      debugPrint('📥 Response status code: ${response.statusCode}');
+      debugPrint('📥 Response body: ${response.body}');
 
-      // Create garage objects directly from n8n response data
-      final sortedGarages = <Garage>[];
-      for (final garageData in garageArray) {
-        try {
-          final garage = Garage(
-            name: garageData['name'],
-            type: garageData['type'],
-            latitude: garageData['latitude'].toDouble(),
-            longitude: garageData['longitude'].toDouble(),
-            studentSpaces: garageData['student_spaces'],
-            studentMaxSpaces: garageData['student_max_spaces'],
-            availableSpaces: garageData['available_spaces'],
-          );
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        debugPrint('✅ Received ${responseData.length} items from n8n');
 
-          sortedGarages.add(garage);
-          //debugPrint('✅ Created garage from n8n data: ${garage.name}');
-        } catch (e) {
-          //  debugPrint(
-          //  '⚠️ Could not create garage from data: $garageData - Error: $e',
-          //);
+        // n8n returns: [{"output": [garage1, garage2...]}]
+        // We need to access responseData[0]["output"]
+        final List<dynamic> garageArray = responseData;
+
+        if (garageArray.isEmpty) {
+          debugPrint('❌ No garages returned from n8n');
+          return [];
         }
-      }
 
-      //debugPrint(
-      //  '🎯 Returning ${sortedGarages.length} garages created from n8n data',
-      //);
-      return sortedGarages;
-    } else {
-      //debugPrint('❌ n8n request failed with status: ${response.statusCode}');
-      //debugPrint('❌ Response body: ${response.body}');
+        final sortedGarages = <Garage>[];
+        for (final garageData in garageArray) {
+          try {
+            final garage = Garage(
+              name: garageData['name'],
+              type: garageData['type'],
+              latitude: (garageData['latitude'] as num).toDouble(),
+              longitude: (garageData['longitude'] as num).toDouble(),
+              availableSpaces: garageData['available_spaces'],
+              // Optionally handle student fields only if they are present:
+              studentSpaces: garageData['studentSpaces'] ?? 0,
+              studentMaxSpaces: garageData['studentMaxSpaces'] ?? 0,
+            );
+            sortedGarages.add(garage);
+          } catch (e) {
+            debugPrint(
+              '⚠️ Could not create garage from data: $garageData - Error: $e',
+            );
+          }
+        }
+
+        debugPrint(
+          '🎯 Returning ${sortedGarages.length} garages created from n8n data',
+        );
+        return sortedGarages;
+      } else {
+        debugPrint('❌ n8n request failed with status: ${response.statusCode}');
+        debugPrint('❌ Response body: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('💥 Error making n8n request: $e');
+      debugPrint('Error details: ${e.toString()}');
       return [];
     }
   } catch (e) {
-    //debugPrint('💥 Error getting AI recommendations: $e');
+    debugPrint('💥 Error getting AI recommendations: $e');
+    debugPrint('Error details: ${e.toString()}');
     return [];
   }
 }

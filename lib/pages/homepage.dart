@@ -48,7 +48,8 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 242, 242, 247),
+      backgroundColor: Color(0xFFF2F2F7)
+    ,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -56,20 +57,21 @@ class _HomepageState extends State<Homepage> {
           children: [
             const SizedBox(height: 50),
             SizedBox(
-              height: 80,
-              child: Center(child: Image.asset('images/fiualonetrans.png')),
+              height: 90,
+              child: Center(child: Image.asset('images/qmage1.png')),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 10),
             const Text(
-              "SMART PARKING",
+              "Smart Parking",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.w700
+              
               ),
             ),
-            const SizedBox(height: 100),
+            const SizedBox(height: 90),
 
             Form(
               key: _formKey,
@@ -80,13 +82,13 @@ class _HomepageState extends State<Homepage> {
                 maxLength: 7, // Limit to 7 digits
                 decoration: const InputDecoration(
                   filled: true,
-                  fillColor: Color.fromARGB(255, 227, 227, 232),
+                  fillColor: Colors.white,
                   labelText: "Enter Your Student ID",
-                  labelStyle: TextStyle(color: AppColors.primary),
+                  labelStyle: TextStyle(color: Colors.black),
                   hintText: "e.g. 1234567",
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primary),
+                    borderSide: BorderSide(color: Colors.black),
                   ),
                   counterText: "", // Hide the character counter
                 ),
@@ -115,8 +117,8 @@ class _HomepageState extends State<Homepage> {
                 : ElevatedButton(
                   onPressed: validateAndFetchGarages,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.backgroundwidget,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
                   ),
                   child: const Text("Submit"),
                 ),

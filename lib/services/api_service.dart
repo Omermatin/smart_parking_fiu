@@ -12,21 +12,30 @@ Map<String, String> _headers(String envKey) => {
 
 Future<dynamic> fetchUsers(String studentsIds) async {
   final baseUrl = dotenv.env['API_URL_SCHEDULE'];
+  debugPrint('Base URL: $baseUrl');
 
-  if (baseUrl == null || dotenv.env['API_KEY'] == null) {
+  if (baseUrl == null || dotenv.env['API_KEYSCHEDULE'] == null) {
     return null;
   }
 
   final fullUrl = '$baseUrl$studentsIds';
   final url = Uri.parse(fullUrl);
+  debugPrint('Fetching users from: $fullUrl');
+  debugPrint('Using API key: ${dotenv.env['API_KEYSCHEDULE']}');
 
   try {
     final response = await _client.get(
       url,
       headers: _headers('API_KEYSCHEDULE'),
     );
+    debugPrint('Response status code: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      debugPrint('Error fetching users: ${response.body}');
+      return null;
+    }
     return await compute(jsonDecode, response.body);
   } catch (e) {
+    debugPrint('Exception while fetching users: $e');
     return null;
   }
 }
