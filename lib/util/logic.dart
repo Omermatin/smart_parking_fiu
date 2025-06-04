@@ -62,17 +62,14 @@ class LocationService {
 
 // Function to calculate the distance between two points using the Haversine formula
 // Returns the distance in meters
-num calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-  const earthRadius = 6371000; // Earth's radius in meters
+num calculateDistance(double? lat1, double? lon1, double? lat2, double? lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return 0;
+  const earthRadius = 6371000;
   final dLat = (lat2 - lat1) * (pi / 180);
   final dLon = (lon2 - lon1) * (pi / 180);
 
-  final a =
-      sin(dLat / 2) * sin(dLat / 2) +
-      cos(lat1 * (pi / 180)) *
-          cos(lat2 * (pi / 180)) *
-          sin(dLon / 2) *
-          sin(dLon / 2);
+  final a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(lat1 * (pi / 180)) * cos(lat2 * (pi / 180)) * sin(dLon / 2) * sin(dLon / 2);
 
   final c = 2 * atan2(sqrt(a), sqrt(1 - a));
   return earthRadius * c;
@@ -201,6 +198,7 @@ Future<List<Garage>> getAIRecommendations(
                   'available_spaces': g.calculateAvailableSpaces(),
                   'availability_percentage':
                       g.calculateAvailabilityPercentage(),
+                  'studentMaxSpaces': g.studentMaxSpaces
                 },
               )
               .toList(),
@@ -247,12 +245,8 @@ Future<List<Garage>> getAIRecommendations(
             final garage = Garage(
               name: garageData['name'],
               type: garageData['type'],
-              latitude: (garageData['latitude'] as num).toDouble(),
-              longitude: (garageData['longitude'] as num).toDouble(),
-              availableSpaces: garageData['available_spaces'],
-              // Optionally handle student fields only if they are present:
-              studentSpaces: garageData['studentSpaces'] ?? 0,
-              studentMaxSpaces: garageData['studentMaxSpaces'] ?? 0,
+              studentMaxSpaces: garageData['student_max_spaces'],  // Use available_spaces as max
+              availableSpaces: garageData['available_spaces']
             );
             sortedGarages.add(garage);
           } catch (e) {

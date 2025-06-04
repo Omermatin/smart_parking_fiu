@@ -15,7 +15,8 @@ class GarageListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLot = garage.type.toLowerCase() == 'lot';
-    final availability = garage.calculateAvailabilityPercentage();
+    final availability =
+        (garage.availableSpaces ?? 0) / (garage.studentMaxSpaces ?? 1);
     return Card(
       color: AppColors.backgroundwidget,
       margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),

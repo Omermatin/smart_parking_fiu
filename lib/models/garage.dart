@@ -1,10 +1,10 @@
 class Garage {
   final String type;
   final String name;
-  final int studentSpaces;
-  final int studentMaxSpaces;
-  final double latitude;
-  final double longitude;
+  final int? studentSpaces;
+  final int? studentMaxSpaces;
+  final double? latitude;
+  final double? longitude;
   int? availableSpaces;
   double? distanceToClass;
   double? distanceFromOrigin;
@@ -15,10 +15,10 @@ class Garage {
   Garage({
     required this.type,
     required this.name,
-    required this.studentSpaces,
-    required this.studentMaxSpaces,
-    required this.latitude,
-    required this.longitude,
+    this.studentSpaces,
+    this.studentMaxSpaces,
+    this.latitude,
+    this.longitude,
     this.availableSpaces,
     this.distanceToClass,
     this.distanceFromOrigin,
@@ -31,7 +31,9 @@ class Garage {
 
   int calculateAvailableSpaces() {
     if (isGarage) {
-      return studentMaxSpaces - studentSpaces;
+      return studentMaxSpaces != null && studentMaxSpaces! > 0
+          ? studentMaxSpaces! - (studentSpaces ?? 0)
+          : 0;
     } else if (isLot) {
       return (lotOtherMaxSpaces ?? 1) - (lotOtherSpaces ?? 0);
     }
@@ -40,8 +42,8 @@ class Garage {
 
   double calculateAvailabilityPercentage() {
     if (isGarage) {
-      return studentMaxSpaces > 0
-          ? calculateAvailableSpaces() / studentMaxSpaces
+      return studentMaxSpaces != null && studentMaxSpaces! > 0
+          ? calculateAvailableSpaces() / studentMaxSpaces!
           : 0.0;
     } else if (isLot) {
       return lotOtherMaxSpaces != null && lotOtherMaxSpaces! > 0
@@ -57,11 +59,12 @@ class Garage {
 
   factory Garage.fromJson(Map<String, dynamic> jsonData) {
     final bool isLot = jsonData['type']?.toString().toLowerCase() == 'lot';
+    // For original format
     return Garage(
       type: jsonData['type'] ?? '',
       name: jsonData['name'] ?? '',
-      studentSpaces: int.tryParse(jsonData['studentSpaces'] ?? '0') ?? 0,
-      studentMaxSpaces: int.tryParse(jsonData['studentMaxSpaces'] ?? '1') ?? 1,
+      studentSpaces: int.tryParse(jsonData['studentSpaces'] ?? '0'),
+      studentMaxSpaces: int.tryParse(jsonData['studentMaxSpaces'] ?? '1'),
       latitude: double.tryParse(jsonData['Latitude'] ?? '0') ?? 0.0,
       longitude: double.tryParse(jsonData['Longitude'] ?? '0') ?? 0.0,
       lotOtherSpaces:
