@@ -9,131 +9,175 @@ class GarageListItem extends StatelessWidget {
 
   String formatDistance(double? distance) {
     if (distance == null) return 'N/A';
-    return '${distance.toStringAsFixed(2)} miles';
+    if (distance < 0.1) return '< 0.1 miles';
+    return '${distance.toStringAsFixed(1)} miles';
   }
 
   @override
   Widget build(BuildContext context) {
     final isLot = garage.type.toLowerCase() == 'lot';
-    final availability =
-        (garage.availableSpaces ?? 0) / (garage.studentMaxSpaces ?? 1);
+    final availableSpaces = garage.calculateAvailableSpaces();
+    final maxSpaces = garage.studentMaxSpaces ?? 1;
+    final availability = availableSpaces / maxSpaces;
+
     return Card(
       color: AppColors.backgroundwidget,
-      margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        isLot ? Icons.local_parking : Icons.garage,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          garage.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Color.fromARGB(255, 2, 33, 80),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 166,
-                  child: RichText(
-                    textAlign: TextAlign.right,
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.bold,
-                      ),
-                      // children: [
-                      //   const TextSpan(text: 'Student Spaces: '),
-                      //   TextSpan(text: '${garage.availableSpaces}'),
-                      // ],
+      child: InkWell(
+        onTap: () {
+          // Future: Add navigation to garage details
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
                       children: [
-                        TextSpan(
-                          text:
-                              isLot
-                                  ? 'All Spaces: ${garage.availableSpaces}'
-                                  : 'Student Spaces: ${garage.availableSpaces}',
+                        Icon(
+                          isLot ? Icons.local_parking : Icons.garage,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                garage.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: Color.fromARGB(255, 2, 33, 80),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                isLot ? 'Parking Lot' : 'Parking Garage',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                isLot ? 'Parking Lot' : 'Parking Garage',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (garage.distanceToClass != null)
-              Row(
-                children: [
-                  Icon(Icons.school, size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 6),
-                  Text(
-                    'To class: ${formatDistance(garage.distanceToClass)}',
-                    style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                  // Availability Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$availableSpaces ${isLot ? "spaces" : "student spots"}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            if (garage.distanceFromOrigin != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.my_location, size: 18, color: Colors.grey[600]),
-                    const SizedBox(width: 6),
+
+              const SizedBox(height: 12),
+
+              // Distance Information
+              Row(
+                children: [
+                  if (garage.distanceToClass != null) ...[
+                    Icon(Icons.school, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
                     Text(
-                      'From you: ${formatDistance(garage.distanceFromOrigin)}',
-                      style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                      formatDistance(garage.distanceToClass),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                  if (garage.distanceFromOrigin != null) ...[
+                    Icon(Icons.my_location, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatDistance(garage.distanceFromOrigin),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                   ],
-                ),
+                ],
               ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+
+              const SizedBox(height: 12),
+
+              // Availability Bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Availability',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      Text(
+                        '${(availability * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: availability,
                       backgroundColor: Colors.grey[300],
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                      minHeight: 8,
+                      minHeight: 6,
                     ),
                   ),
+                ],
+              ),
+
+              // AI Score indicator (if available)
+              if (garage.score != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: Colors.amber[700],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI Score: ${garage.score!.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
               ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

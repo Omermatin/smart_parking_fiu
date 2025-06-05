@@ -1,3 +1,4 @@
 {
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "cmake.sourceDirectory": "/Users/ousmanbah/Downloads/FLUTTER APPS/smart_parking_fiu/linux"
 }

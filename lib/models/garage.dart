@@ -8,9 +8,13 @@ class Garage {
   int? availableSpaces;
   double? distanceToClass;
   double? distanceFromOrigin;
-  int? lotOtherMaxSpaces;
-  int? lotOtherSpaces;
+  final int? lotOtherMaxSpaces;
+  final int? lotOtherSpaces;
   double? score;
+
+  // Cached values
+  int? _cachedAvailableSpaces;
+  double? _cachedAvailabilityPercentage;
 
   Garage({
     required this.type,
@@ -26,31 +30,57 @@ class Garage {
     this.lotOtherSpaces = 0,
     this.score,
   });
+
   bool get isLot => type.toLowerCase() == 'lot';
   bool get isGarage => type.toLowerCase() == 'garage';
 
   int calculateAvailableSpaces() {
-    if (isGarage) {
-      return studentMaxSpaces != null && studentMaxSpaces! > 0
-          ? studentMaxSpaces! - (studentSpaces ?? 0)
-          : 0;
-    } else if (isLot) {
-      return (lotOtherMaxSpaces ?? 1) - (lotOtherSpaces ?? 0);
+    // Return cached value if available
+    if (_cachedAvailableSpaces != null) return _cachedAvailableSpaces!;
+
+    // If availableSpaces is already set (from AI), use it
+    if (availableSpaces != null) {
+      _cachedAvailableSpaces = availableSpaces;
+      return availableSpaces!;
     }
-    return 0;
+
+    // Calculate based on type
+    if (isGarage) {
+      _cachedAvailableSpaces =
+          studentMaxSpaces != null && studentMaxSpaces! > 0
+              ? studentMaxSpaces! - (studentSpaces ?? 0)
+              : 0;
+    } else if (isLot) {
+      _cachedAvailableSpaces = (lotOtherMaxSpaces ?? 1) - (lotOtherSpaces ?? 0);
+    } else {
+      _cachedAvailableSpaces = 0;
+    }
+
+    return _cachedAvailableSpaces!;
   }
 
   double calculateAvailabilityPercentage() {
+    // Return cached value if available
+    if (_cachedAvailabilityPercentage != null)
+      return _cachedAvailabilityPercentage!;
+
+    final available = calculateAvailableSpaces();
+
     if (isGarage) {
-      return studentMaxSpaces != null && studentMaxSpaces! > 0
-          ? calculateAvailableSpaces() / studentMaxSpaces!
-          : 0.0;
+      _cachedAvailabilityPercentage =
+          studentMaxSpaces != null && studentMaxSpaces! > 0
+              ? available / studentMaxSpaces!
+              : 0.0;
     } else if (isLot) {
-      return lotOtherMaxSpaces != null && lotOtherMaxSpaces! > 0
-          ? calculateAvailableSpaces() / lotOtherMaxSpaces!
-          : 0.0;
+      _cachedAvailabilityPercentage =
+          lotOtherMaxSpaces != null && lotOtherMaxSpaces! > 0
+              ? available / lotOtherMaxSpaces!
+              : 0.0;
+    } else {
+      _cachedAvailabilityPercentage = 0.0;
     }
-    return 0.0;
+
+    return _cachedAvailabilityPercentage!;
   }
 
   bool hasAvailableSpaces() {
@@ -59,18 +89,38 @@ class Garage {
 
   factory Garage.fromJson(Map<String, dynamic> jsonData) {
     final bool isLot = jsonData['type']?.toString().toLowerCase() == 'lot';
-    // For original format
+
     return Garage(
-      type: jsonData['type'] ?? '',
-      name: jsonData['name'] ?? '',
-      studentSpaces: int.tryParse(jsonData['studentSpaces'] ?? '0'),
-      studentMaxSpaces: int.tryParse(jsonData['studentMaxSpaces'] ?? '1'),
-      latitude: double.tryParse(jsonData['Latitude'] ?? '0') ?? 0.0,
-      longitude: double.tryParse(jsonData['Longitude'] ?? '0') ?? 0.0,
-      lotOtherSpaces:
-          isLot ? int.tryParse(jsonData['otherSpaces'] ?? '0') ?? 0 : 0,
+      type: jsonData['type']?.toString() ?? '',
+      name: jsonData['name']?.toString() ?? '',
+      studentSpaces: _parseIntSafely(jsonData['studentSpaces']),
+      studentMaxSpaces: _parseIntSafely(jsonData['studentMaxSpaces']) ?? 1,
+      latitude: _parseDoubleSafely(jsonData['Latitude']),
+      longitude: _parseDoubleSafely(jsonData['Longitude']),
+      lotOtherSpaces: isLot ? _parseIntSafely(jsonData['otherSpaces']) ?? 0 : 0,
       lotOtherMaxSpaces:
-          isLot ? int.tryParse(jsonData['otherMaxSpaces'] ?? '1') ?? 1 : 0,
+          isLot ? _parseIntSafely(jsonData['otherMaxSpaces']) ?? 1 : 0,
     );
+  }
+
+  // Helper methods for safe parsing
+  static int? _parseIntSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static double? _parseDoubleSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  @override
+  String toString() {
+    return 'Garage(name: $name, type: $type, available: ${calculateAvailableSpaces()}, score: $score)';
   }
 }

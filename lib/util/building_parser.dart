@@ -1,19 +1,56 @@
 import '../models/building.dart';
+import 'package:flutter/foundation.dart';
 
 class BuildingCache {
   static List<Building> _buildings = [];
   static bool _isInitialized = false;
+  static final Map<String, Building> _buildingMap = {};
+
+  static bool get isInitialized => _isInitialized;
 
   static void initialize(List<dynamic> buildingData) {
+    if (_isInitialized) {
+      debugPrint('⚠️ Building cache already initialized, skipping...');
+      return;
+    }
+
+    debugPrint('🏢 Initializing building cache...');
     _buildings = BuildingParser.parseBuildings(buildingData);
+
+    // Create a map for O(1) lookup by building code
+    _buildingMap.clear();
+    for (final building in _buildings) {
+      _buildingMap[building.name.toUpperCase()] = building;
+    }
+
     _isInitialized = true;
+    debugPrint(
+      '✅ Building cache initialized with ${_buildings.length} buildings',
+    );
   }
 
   static List<Building> getBuildings() {
     if (!_isInitialized) {
+      debugPrint('⚠️ Building cache not initialized');
       return [];
     }
-    return _buildings;
+    return List.unmodifiable(_buildings);
+  }
+
+  static Building? getBuildingByCode(String code) {
+    if (!_isInitialized) {
+      debugPrint('⚠️ Building cache not initialized');
+      return null;
+    }
+    return _buildingMap[code.toUpperCase()];
+  }
+
+  // Clear cache if needed (e.g., for testing)
+  static void clear() {
+    _buildings.clear();
+    _buildingMap.clear();
+    _isInitialized = false;
+    debugPrint('🧹 Building cache cleared');
   }
 }
 
@@ -23,25 +60,26 @@ class BuildingParser {
         .where(
           (entry) => entry['campusCode']?.toString().toUpperCase() == 'MMC',
         )
-        .map(
-          (entry) => Building(
-            name: entry['buildingCode'] ?? '',
-            latitude:
-                double.tryParse(entry['latitude']?.toString() ?? '0') ?? 0,
-            longitude:
-                double.tryParse(entry['longitude']?.toString() ?? '0') ?? 0,
-          ),
-        )
+        .map((entry) {
+          try {
+            return Building(
+              name: entry['buildingCode'] ?? '',
+              latitude:
+                  double.tryParse(entry['latitude']?.toString() ?? '0') ?? 0,
+              longitude:
+                  double.tryParse(entry['longitude']?.toString() ?? '0') ?? 0,
+            );
+          } catch (e) {
+            debugPrint('⚠️ Error parsing building: $e');
+            return null;
+          }
+        })
+        .whereType<Building>()
         .toList();
   }
 }
 
+// Global helper function for backward compatibility
 Building? getBuildingByCode(String buildingCode) {
-  try {
-    return BuildingCache.getBuildings().firstWhere(
-      (b) => b.name.toUpperCase() == buildingCode.toUpperCase(),
-    );
-  } catch (e) {
-    return null;
-  }
+  return BuildingCache.getBuildingByCode(buildingCode);
 }

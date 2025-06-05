@@ -9,22 +9,28 @@ import 'dart:convert';
 import '../models/class_schedule.dart';
 import 'dart:math';
 import '../util/building_parser.dart';
+import '../util/constants.dart';
 
 class LocationService {
   static Position? _currentPosition;
+  static bool _isInitializing = false;
 
   // Initialize location once
   static Future<void> initializeUserLocation() async {
-    // Already have a cached position? Skip the expensive call.
-    if (_currentPosition != null) return;
+    // Already have a cached position or currently initializing? Skip
+    if (_currentPosition != null || _isInitializing) return;
+
+    _isInitializing = true;
     try {
       _currentPosition = await _determinePosition();
-      //debugPrint(
-      //  "User Location Initialized: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}",
-      //);
+      debugPrint(
+        "✅ User Location Initialized: ${_currentPosition?.latitude}, ${_currentPosition?.longitude}",
+      );
     } catch (e) {
-      //  debugPrint("Error initializing location: $e");
+      debugPrint("❌ Error initializing location: $e");
       _currentPosition = null;
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -53,7 +59,10 @@ class LocationService {
     }
 
     // If permissions are granted, get the location
-    return await Geolocator.getCurrentPosition();
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 5),
+    );
   }
 
   // Get the current stored location
@@ -68,62 +77,53 @@ num calculateDistance(double? lat1, double? lon1, double? lat2, double? lon2) {
   final dLat = (lat2 - lat1) * (pi / 180);
   final dLon = (lon2 - lon1) * (pi / 180);
 
-  final a = sin(dLat / 2) * sin(dLat / 2) +
-      cos(lat1 * (pi / 180)) * cos(lat2 * (pi / 180)) * sin(dLon / 2) * sin(dLon / 2);
+  final a =
+      sin(dLat / 2) * sin(dLat / 2) +
+      cos(lat1 * (pi / 180)) *
+          cos(lat2 * (pi / 180)) *
+          sin(dLon / 2) *
+          sin(dLon / 2);
 
   final c = 2 * atan2(sqrt(a), sqrt(1 - a));
   return earthRadius * c;
 }
 
-// Simple function to get ranked garages from n8n
-Future<List<Garage>> getAIRecommendations(
+// Optimized function that takes already fetched data
+Future<List<Garage>> getAIRecommendationsOptimized(
   String pantherId,
   double longitude,
   double latitude,
   List<ClassSchedule> todaySchedule,
-  Future<dynamic> parkingFuture,
-  Future<dynamic> buildingFuture,
+  dynamic parkingResults,
+  dynamic buildingResults,
 ) async {
   try {
-    debugPrint('🚀 Starting getAIRecommendations for student: $pantherId');
-
-    // 1. Fetch parking & building together
-    debugPrint('📋 Fetching parking + building in parallel…');
-    // 1. Fetch parking & building together
-    final results = await Future.wait([parkingFuture, buildingFuture]);
-
-    final parkingResults = results[0];
-    final buildingResults = results[1];
+    debugPrint(
+      '🚀 Starting getAIRecommendationsOptimized for student: $pantherId',
+    );
 
     if (parkingResults == null || buildingResults == null) {
-      debugPrint('❌ Failed to fetch parking or building data');
+      debugPrint('❌ Parking or building data is null');
       return [];
     }
-    debugPrint('✅ Parking & Building data fetched');
 
-    // 2. Parse available garages
+    // Parse available garages
     debugPrint('🏗️ Parsing garages...');
     final availableGarages = GarageParser.parseGarages(parkingResults);
-    debugPrint('✅ Found ${availableGarages.length} garages');
-
-    // 3. Get today's classes
-    debugPrint('📚 Parsing today\'s classes...');
-    final allTodayClasses = todaySchedule;
-    debugPrint('✅ Found ${allTodayClasses.length} classes for today');
     debugPrint(
-      '📚 Class building codes: ${allTodayClasses.map((c) => c.buildingCode).join(", ")}',
+      '✅ Found ${availableGarages.length} garages with available spaces',
     );
 
-    // 4. Filter buildings to only those matching codes in today's classes
+    if (availableGarages.isEmpty) {
+      debugPrint('❌ No garages with available spaces');
+      return [];
+    }
+
+    // Filter buildings for today's classes
     final Set<String> todayBuildingCodes =
-        allTodayClasses.map((c) => c.buildingCode.trim().toUpperCase()).toSet();
+        todaySchedule.map((c) => c.buildingCode.trim().toUpperCase()).toSet();
 
-    debugPrint(
-      '🏛️ Raw building data count: ${(buildingResults as List<dynamic>).length}',
-    );
-    debugPrint(
-      '🏛️ Raw building codes: ${buildingResults.map((b) => b['buildingCode']).join(", ")}',
-    );
+    debugPrint('📚 Today\'s building codes: ${todayBuildingCodes.join(", ")}');
 
     final filteredBuildings =
         buildingResults.where((b) {
@@ -132,31 +132,33 @@ Future<List<Garage>> getAIRecommendations(
           return todayBuildingCodes.contains(code);
         }).toList();
 
-    debugPrint('🏢 Filtered buildings count: ${filteredBuildings.length}');
     debugPrint(
-      '🏢 Filtered building codes: ${filteredBuildings.map((b) => b['buildingCode']).join(", ")}',
+      '🏛️ Filtered ${filteredBuildings.length} buildings for today\'s classes',
     );
 
-    // Initialize building cache with ALL buildings, not just filtered ones
-    BuildingCache.initialize(buildingResults);
-
-    // 5. Send data to n8n
+    // Prepare n8n request
     final n8nUrl = dotenv.env['N8N_WEBHOOK_URL'];
-
     if (n8nUrl == null) {
       debugPrint('❌ N8N_WEBHOOK_URL not found in environment variables');
       return [];
     }
-    debugPrint('🔗 N8N URL found: $n8nUrl');
-    debugPrint('📤 Sending request to n8n...');
 
-    final requestBody = jsonEncode({
+    // Build request payload with pre-calculated distances
+    final requestPayload = {
       'student_id': pantherId,
       'student_location': {'latitude': latitude, 'longitude': longitude},
       'today_classes':
-          allTodayClasses
-              .map(
-                (c) => {
+          todaySchedule
+              .map((c) {
+                final building = getBuildingByCode(c.buildingCode);
+                if (building == null) {
+                  debugPrint(
+                    '⚠️ Building ${c.buildingCode} not found in cache',
+                  );
+                  return null;
+                }
+
+                return {
                   'building_code': c.buildingCode,
                   'meeting_time_start': c.meetingTimeStart,
                   'meeting_time_end': c.meetingTimeEnd,
@@ -165,27 +167,18 @@ Future<List<Garage>> getAIRecommendations(
                           .map(
                             (g) => {
                               'garage_name': g.name,
-                              'distance': () {
-                                final building = getBuildingByCode(
-                                  c.buildingCode,
-                                );
-                                if (building == null) {
-                                  throw Exception(
-                                    'Building with code \\${c.buildingCode} not found.',
-                                  );
-                                }
-                                return calculateDistance(
-                                  building.latitude,
-                                  building.longitude,
-                                  g.latitude,
-                                  g.longitude,
-                                );
-                              }(),
+                              'distance': calculateDistance(
+                                building.latitude,
+                                building.longitude,
+                                g.latitude,
+                                g.longitude,
+                              ),
                             },
                           )
                           .toList(),
-                },
-              )
+                };
+              })
+              .where((c) => c != null)
               .toList(),
       'available_garages':
           availableGarages
@@ -198,7 +191,7 @@ Future<List<Garage>> getAIRecommendations(
                   'available_spaces': g.calculateAvailableSpaces(),
                   'availability_percentage':
                       g.calculateAvailabilityPercentage(),
-                  'studentMaxSpaces': g.studentMaxSpaces
+                  'studentMaxSpaces': g.studentMaxSpaces,
                 },
               )
               .toList(),
@@ -212,42 +205,78 @@ Future<List<Garage>> getAIRecommendations(
                 },
               )
               .toList(),
-    });
+    };
 
-    debugPrint('📦 Request payload: $requestBody');
+    debugPrint('📤 Sending request to n8n...');
 
+    // Make n8n request with timeout
     try {
-      final response = await http.post(
-        Uri.parse(n8nUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: requestBody,
-      );
+      final response = await http
+          .post(
+            Uri.parse(n8nUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(requestPayload),
+          )
+          .timeout(
+            AppConstants.n8nRequestTimeout,
+            onTimeout: () {
+              throw Exception('n8n request timeout');
+            },
+          );
 
       debugPrint('📥 Response status code: ${response.statusCode}');
-      debugPrint('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = jsonDecode(response.body);
-        debugPrint('✅ Received ${responseData.length} items from n8n');
 
-        // n8n returns: [{"output": [garage1, garage2...]}]
-        // We need to access responseData[0]["output"]
-        final List<dynamic> garageArray = responseData;
-
-        if (garageArray.isEmpty) {
+        if (responseData.isEmpty) {
           debugPrint('❌ No garages returned from n8n');
           return [];
         }
 
+        // Parse n8n response into Garage objects
         final sortedGarages = <Garage>[];
-        for (final garageData in garageArray) {
+        for (final garageData in responseData) {
           try {
+            final String type = garageData['type'];
+            final int? studentMaxSpaces =
+                type == "lot"
+                    ? garageData['other_max_spaces']
+                    : garageData['student_max_spaces'];
+
+            // Find matching garage from available garages to get location data
+            final matchingGarage = availableGarages.firstWhere(
+              (g) => g.name == garageData['name'],
+              orElse: () => Garage(name: '', type: ''),
+            );
+
             final garage = Garage(
               name: garageData['name'],
-              type: garageData['type'],
-              studentMaxSpaces: garageData['student_max_spaces'],  // Use available_spaces as max
-              availableSpaces: garageData['available_spaces']
+              type: type,
+              studentMaxSpaces: studentMaxSpaces,
+              availableSpaces: garageData['available_spaces'],
+              score: garageData['score']?.toDouble(),
+              // Include location data from matching garage
+              latitude:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.latitude
+                      : null,
+              longitude:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.longitude
+                      : null,
+              distanceFromOrigin:
+                  matchingGarage.name.isNotEmpty
+                      ? calculateDistance(
+                            latitude,
+                            longitude,
+                            matchingGarage.latitude,
+                            matchingGarage.longitude,
+                          ).toDouble() /
+                          1609.34 // Convert to miles
+                      : null,
             );
+
             sortedGarages.add(garage);
           } catch (e) {
             debugPrint(
@@ -256,9 +285,7 @@ Future<List<Garage>> getAIRecommendations(
           }
         }
 
-        debugPrint(
-          '🎯 Returning ${sortedGarages.length} garages created from n8n data',
-        );
+        debugPrint('🎯 Returning ${sortedGarages.length} recommended garages');
         return sortedGarages;
       } else {
         debugPrint('❌ n8n request failed with status: ${response.statusCode}');
@@ -267,12 +294,52 @@ Future<List<Garage>> getAIRecommendations(
       }
     } catch (e) {
       debugPrint('💥 Error making n8n request: $e');
-      debugPrint('Error details: ${e.toString()}');
-      return [];
+      throw e;
     }
   } catch (e) {
     debugPrint('💥 Error getting AI recommendations: $e');
-    debugPrint('Error details: ${e.toString()}');
-    return [];
+    rethrow;
   }
+}
+
+// Utility function for retry logic
+
+// Sorting functions
+List<Garage> sortGaragesByAvailability(List<Garage> garages) {
+  final sorted = List<Garage>.from(garages);
+  sorted.sort(
+    (a, b) =>
+        b.calculateAvailableSpaces().compareTo(a.calculateAvailableSpaces()),
+  );
+  return sorted;
+}
+
+List<Garage> sortGaragesByDistanceFromYou(List<Garage> garages) {
+  final sorted = List<Garage>.from(garages);
+  sorted.sort((a, b) {
+    final distA = a.distanceFromOrigin ?? double.infinity;
+    final distB = b.distanceFromOrigin ?? double.infinity;
+    return distA.compareTo(distB);
+  });
+  return sorted;
+}
+
+List<Garage> sortGaragesByDistanceFromClass(List<Garage> garages) {
+  final sorted = List<Garage>.from(garages);
+  sorted.sort((a, b) {
+    final distA = a.distanceToClass ?? double.infinity;
+    final distB = b.distanceToClass ?? double.infinity;
+    return distA.compareTo(distB);
+  });
+  return sorted;
+}
+
+List<Garage> resetToOriginalOrder(List<Garage> garages) {
+  final sorted = List<Garage>.from(garages);
+  sorted.sort((a, b) {
+    final scoreA = a.score ?? 0;
+    final scoreB = b.score ?? 0;
+    return scoreB.compareTo(scoreA); // Higher score first
+  });
+  return sorted;
 }

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import 'package:smart_parking_fiu/util/class_schedule_parser.dart';
+import 'package:smart_parking_fiu/util/building_parser.dart';
 import '../services/api_service.dart';
 import '../models/garage.dart';
 import '../util/logic.dart';
+import '../util/constants.dart';
+import '../util/error_handler.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
@@ -12,6 +17,8 @@ class AppColors {
   static const Color error = Colors.red;
   static const Color text = Color.fromARGB(255, 0, 0, 0);
 }
+
+enum LoadingState { initial, loading, loaded, error }
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -24,10 +31,15 @@ class _HomepageState extends State<Homepage> {
   final TextEditingController idController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  LoadingState _state = LoadingState.initial;
+  String? _errorMessage;
+  Timer? _debounce;
+  bool _isNavigating = false;
+
   @override
   void initState() {
     super.initState();
-    // Only initialize location service
+    // Initialize location service immediately
     LocationService.initializeUserLocation();
   }
 
@@ -36,12 +48,9 @@ class _HomepageState extends State<Homepage> {
     return RegExp(r'^\d{7}$').hasMatch(id.trim());
   }
 
-  bool isLoading = false;
-  String errorMessage = '';
-  List<Garage> garages = [];
-
   @override
   void dispose() {
+    _debounce?.cancel();
     idController.dispose();
     super.dispose();
   }
@@ -49,7 +58,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF2F2F7),
+      backgroundColor: const Color(0xFFF2F2F7),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: ListView(
@@ -58,14 +67,14 @@ class _HomepageState extends State<Homepage> {
             const SizedBox(height: 50),
             SizedBox(
               height: 90,
-              child: Center(child: Image.asset('images/qmage1.png')),
+              child: Center(child: Image.asset('images/fiualonetrans.jpg')),
             ),
             const SizedBox(height: 10),
             const Text(
               "Smart Parking",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black,
+                color: AppColors.primary,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
@@ -75,10 +84,10 @@ class _HomepageState extends State<Homepage> {
             Form(
               key: _formKey,
               child: TextFormField(
-                style: TextStyle(color: AppColors.text),
+                style: const TextStyle(color: AppColors.text),
                 controller: idController,
                 keyboardType: TextInputType.number,
-                maxLength: 7, // Limit to 7 digits
+                maxLength: AppConstants.pantherIdLength,
                 decoration: const InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
@@ -89,7 +98,7 @@ class _HomepageState extends State<Homepage> {
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black),
                   ),
-                  counterText: "", // Hide the character counter
+                  counterText: "",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -99,9 +108,14 @@ class _HomepageState extends State<Homepage> {
                   }
                   return null;
                 },
-                onChanged: (_) {
-                  setState(() {
-                    errorMessage = '';
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(AppConstants.debounceDuration, () {
+                    if (mounted) {
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    }
                   });
                 },
               ),
@@ -109,30 +123,15 @@ class _HomepageState extends State<Homepage> {
 
             const SizedBox(height: 25),
 
-            isLoading
-                ? Center(
-                  child: Lottie.asset(
-                    'assets/Animation - 1748970341722 (2).json',
-                    width: 100,
-                    height: 100,
-                    repeat: true,
-                  ),
-                )
-                : ElevatedButton(
-                  onPressed: validateAndFetchGarages,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text("Submit"),
-                ),
+            _buildSubmitButton(),
 
-            if (errorMessage.isNotEmpty)
+            if (_errorMessage != null)
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  errorMessage,
+                  _errorMessage!,
                   style: const TextStyle(color: AppColors.error),
+                  textAlign: TextAlign.center,
                 ),
               ),
           ],
@@ -141,10 +140,38 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  void validateAndFetchGarages() async {
+  Widget _buildSubmitButton() {
+    if (_state == LoadingState.loading) {
+      return Center(
+        child: RepaintBoundary(
+          child: Lottie.asset(
+            'assets/Animation - 1748970341722 (2).json',
+            width: 100,
+            height: 100,
+            repeat: true,
+            frameRate: FrameRate(60),
+          ),
+        ),
+      );
+    }
+
+    return ElevatedButton(
+      onPressed:
+          _state == LoadingState.loading ? null : validateAndFetchGarages,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      child: const Text("Submit"),
+    );
+  }
+
+  Future<void> validateAndFetchGarages() async {
+    if (_state == LoadingState.loading) return;
+
     setState(() {
-      errorMessage = '';
-      isLoading = true;
+      _errorMessage = null;
+      _state = LoadingState.loading;
     });
 
     debugPrint('🚀 Submit button pressed');
@@ -152,7 +179,7 @@ class _HomepageState extends State<Homepage> {
     if (!_formKey.currentState!.validate()) {
       debugPrint('❌ Form validation failed');
       setState(() {
-        isLoading = false;
+        _state = LoadingState.initial;
       });
       return;
     }
@@ -161,90 +188,118 @@ class _HomepageState extends State<Homepage> {
     debugPrint('✅ Form validated. Student ID: $enteredId');
 
     try {
-      final userPosition = LocationService.currentPosition;
+      // Start all async operations in parallel
 
+      final futures = await Future.wait([
+        LocationService.initializeUserLocation().then(
+          (_) => LocationService.currentPosition,
+        ),
+        fetchUsers(enteredId),
+        fetchParking(),
+        fetchBuilding(),
+      ]);
+
+      final userPosition = futures[0] as Position?;
+      final classJson = futures[1] as Map<String, dynamic>?;
+      final parkingData = futures[2];
+      final buildingData = futures[3];
+
+      // Validate location
       if (userPosition == null) {
-        debugPrint('❌ Location not available');
-        setState(() {
-          errorMessage = "Location services not available";
-          isLoading = false;
-        });
+        _handleError(
+          "Location services not available. Please enable location access.",
+        );
         return;
       }
+
       debugPrint(
         '✅ Location available: ${userPosition.latitude}, ${userPosition.longitude}',
       );
 
-      // Start parking & building fetches immediately
-      final parkingFuture = fetchParking();
-      final buildingFuture = fetchBuilding();
-
-      // Fetch the class schedule to validate the Panther ID
-      debugPrint('📚 Fetching class schedule...');
-      final classJson = await fetchUsers(enteredId);
+      // Validate class data
       if (classJson == null) {
-        debugPrint('❌ No class data returned from API');
-        setState(() {
-          errorMessage = "Invalid Panther ID or no classes found";
-          isLoading = false;
-        });
+        _handleError("Invalid Panther ID or no classes found");
         return;
       }
+
       debugPrint('✅ Class schedule fetched successfully');
+
+      // Initialize building cache if not already done
+      if (buildingData != null && !BuildingCache.isInitialized) {
+        BuildingCache.initialize(buildingData);
+        debugPrint('✅ Building cache initialized');
+      }
+
+      // Parse today's schedule
       final todaySchedule = ClassScheduleParser.getAllTodayClasses(classJson);
       if (todaySchedule.isEmpty) {
-        debugPrint('❌ No today schedule found');
-        setState(() {
-          errorMessage = "You have no classes today! No need to park :)";
-          isLoading = false;
-        });
+        _handleError("You have no classes today! No need to park 😊");
         return;
       }
-      // Get AI-powered recommendations
-      debugPrint('🤖 Calling getAIRecommendations...');
-      final result = await getAIRecommendations(
+
+      debugPrint('📚 Found ${todaySchedule.length} classes for today');
+
+      // Get AI-powered recommendations with already fetched data
+      final recommendationsStopwatch = Stopwatch()..start();
+
+      final result = await getAIRecommendationsOptimized(
         enteredId,
         userPosition.longitude,
         userPosition.latitude,
         todaySchedule,
-        parkingFuture,
-        buildingFuture,
+        parkingData,
+        buildingData,
       );
-      debugPrint('🤖 getAIRecommendations returned ${result.length} garages');
+
+      recommendationsStopwatch.stop();
+      debugPrint(
+        '🤖 AI recommendations received in ${recommendationsStopwatch.elapsedMilliseconds}ms',
+      );
 
       if (result.isNotEmpty) {
-        if (!mounted) {
-          return;
-        }
-        debugPrint('✅ Navigating to recommendations page');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => RecommendationsPage(
-                  recommendations: result,
-                  fullScheduleJson: classJson,
-                ),
-          ),
-        ).then((_) {
-          if (mounted) {
-            setState(() {
-              isLoading = false;
-            });
-          }
-        });
+        _navigateToRecommendations(result, classJson);
       } else {
-        debugPrint('❌ No recommendations returned');
-        setState(() {
-          errorMessage = "Failed to get recommendations";
-          isLoading = false;
-        });
+        _handleError("No parking recommendations available at this time");
       }
     } catch (e) {
       debugPrint('💥 Error in validateAndFetchGarages: $e');
+      _handleError(ErrorHandler.getUserFriendlyError(e));
+    }
+  }
+
+  void _navigateToRecommendations(
+    List<Garage> recommendations,
+    Map<String, dynamic> classJson,
+  ) {
+    if (_isNavigating || !mounted) return;
+
+    _isNavigating = true;
+    debugPrint('✅ Navigating to recommendations page');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => RecommendationsPage(
+              recommendations: recommendations,
+              fullScheduleJson: classJson,
+            ),
+      ),
+    ).then((_) {
+      _isNavigating = false;
+      if (mounted) {
+        setState(() {
+          _state = LoadingState.initial;
+        });
+      }
+    });
+  }
+
+  void _handleError(String message) {
+    if (mounted) {
       setState(() {
-        errorMessage = "Error: $e";
-        isLoading = false;
+        _errorMessage = message;
+        _state = LoadingState.error;
       });
     }
   }

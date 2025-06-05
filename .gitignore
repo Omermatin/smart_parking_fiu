@@ -46,3 +46,4 @@ app.*.map.json
 
 
 .env
+/lib/widgets/class_info_card.dart
