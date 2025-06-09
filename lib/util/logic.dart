@@ -70,7 +70,6 @@ class LocationService {
 }
 
 // Function to calculate the distance between two points using the Haversine formula
-// Returns the distance in meters
 num calculateDistance(double? lat1, double? lon1, double? lat2, double? lon2) {
   if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return 0;
   const earthRadius = 6371000;
@@ -273,7 +272,8 @@ Future<List<Garage>> getAIRecommendationsOptimized(
                             matchingGarage.latitude,
                             matchingGarage.longitude,
                           ).toDouble() /
-                          1609.34 // Convert to miles
+                          1609.34
+                      // Convert to miles
                       : null,
             );
 
@@ -319,6 +319,7 @@ List<Garage> sortGaragesByDistanceFromYou(List<Garage> garages) {
   sorted.sort((a, b) {
     final distA = a.distanceFromOrigin ?? double.infinity;
     final distB = b.distanceFromOrigin ?? double.infinity;
+
     return distA.compareTo(distB);
   });
   return sorted;
@@ -335,11 +336,6 @@ List<Garage> sortGaragesByDistanceFromClass(List<Garage> garages) {
 }
 
 List<Garage> resetToOriginalOrder(List<Garage> garages) {
-  final sorted = List<Garage>.from(garages);
-  sorted.sort((a, b) {
-    final scoreA = a.score ?? 0;
-    final scoreB = b.score ?? 0;
-    return scoreB.compareTo(scoreA); // Higher score first
-  });
-  return sorted;
+  // Just return a copy of the original list without sorting
+  return List<Garage>.from(garages);
 }

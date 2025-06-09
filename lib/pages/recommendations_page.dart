@@ -72,6 +72,8 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
         _currentRecommendations = resetToOriginalOrder(
           _originalRecommendations,
         );
+        debugPrint('✅ Sorted: $_currentRecommendations');
+        ;
       } else {
         _activeSort = sortType;
         switch (sortType) {

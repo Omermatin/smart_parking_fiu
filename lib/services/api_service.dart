@@ -14,8 +14,6 @@ Map<String, String> _headers(String envKey) => {
 Future<dynamic> fetchUsers(String studentsIds) async {
   final baseUrl = dotenv.env['API_URL_SCHEDULE'];
 
-  debugPrint('📚 Fetching user schedule...');
-
   if (baseUrl == null || dotenv.env['API_KEYSCHEDULE'] == null) {
     debugPrint('❌ Missing API configuration for schedule');
     return null;
@@ -37,13 +35,13 @@ Future<dynamic> fetchUsers(String studentsIds) async {
     debugPrint('✅ Schedule API response: ${response.statusCode}');
 
     if (response.statusCode != 200) {
-      debugPrint('❌ Error fetching users: ${response.body}');
+      debugPrint('Error fetching users: ${response.body}');
       return null;
     }
 
     return await compute(jsonDecode, response.body);
   } catch (e) {
-    debugPrint('❌ Exception while fetching users: $e');
+    debugPrint('Exception while fetching users: $e');
     rethrow;
   }
 }
@@ -52,7 +50,7 @@ Future<dynamic> fetchParking() async {
   ;
   final fullUrl = dotenv.env['API_URL_PARKING'];
 
-  debugPrint('🚗 Fetching parking data...');
+  debugPrint('Fetching parking data...');
 
   if (fullUrl == null) {
     throw Exception('API_URL_PARKING not found in environment variables.');

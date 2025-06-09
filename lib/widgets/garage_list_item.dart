@@ -7,10 +7,9 @@ class GarageListItem extends StatelessWidget {
 
   const GarageListItem({required this.garage, super.key});
 
-  String formatDistance(double? distance) {
-    if (distance == null) return 'N/A';
-    if (distance < 0.1) return '< 0.1 miles';
-    return '${distance.toStringAsFixed(1)} miles';
+  String formatDistance(double? miles) {
+    if (miles == null) return '–';
+    return '${miles.toStringAsFixed(2)} mi';
   }
 
   @override
