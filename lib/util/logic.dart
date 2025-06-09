@@ -144,7 +144,6 @@ Future<List<Garage>> getAIRecommendationsOptimized(
 
     // Build request payload with pre-calculated distances
     final requestPayload = {
-      'student_id': pantherId,
       'student_location': {'latitude': latitude, 'longitude': longitude},
       'today_classes':
           todaySchedule
@@ -185,12 +184,13 @@ Future<List<Garage>> getAIRecommendationsOptimized(
                 (g) => {
                   'name': g.name,
                   'type': g.type,
-                  'latitude': g.latitude,
-                  'longitude': g.longitude,
                   'available_spaces': g.calculateAvailableSpaces(),
                   'availability_percentage':
                       g.calculateAvailabilityPercentage(),
-                  'studentMaxSpaces': g.studentMaxSpaces,
+                  'max_spaces':
+                      g.type.toLowerCase() == 'lot'
+                          ? g.lotOtherMaxSpaces
+                          : g.studentMaxSpaces,
                 },
               )
               .toList(),
@@ -238,11 +238,7 @@ Future<List<Garage>> getAIRecommendationsOptimized(
         for (final garageData in responseData) {
           try {
             final String type = garageData['type'];
-            final int? studentMaxSpaces =
-                type == "lot"
-                    ? garageData['other_max_spaces']
-                    : garageData['student_max_spaces'];
-
+            final int? maxSpaces = garageData['max_spaces'];
             // Find matching garage from available garages to get location data
             final matchingGarage = availableGarages.firstWhere(
               (g) => g.name == garageData['name'],
@@ -252,9 +248,10 @@ Future<List<Garage>> getAIRecommendationsOptimized(
             final garage = Garage(
               name: garageData['name'],
               type: type,
-              studentMaxSpaces: studentMaxSpaces,
+              studentMaxSpaces: maxSpaces,
               availableSpaces: garageData['available_spaces'],
               score: garageData['score']?.toDouble(),
+              lotOtherMaxSpaces: maxSpaces,
               // Include location data from matching garage
               latitude:
                   matchingGarage.name.isNotEmpty
