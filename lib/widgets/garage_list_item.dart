@@ -16,7 +16,10 @@ class GarageListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLot = garage.type.toLowerCase() == 'lot';
     final availableSpaces = garage.calculateAvailableSpaces();
-    final maxSpaces = garage.studentMaxSpaces ?? 1;
+    final maxSpaces =
+        garage.type.toLowerCase() == 'lot'
+            ? (garage.lotOtherMaxSpaces ?? 1)
+            : (garage.studentMaxSpaces ?? 1);
     final availability = availableSpaces / maxSpaces;
 
     return Card(

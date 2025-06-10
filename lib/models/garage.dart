@@ -121,6 +121,6 @@ class Garage {
 
   @override
   String toString() {
-    return 'Garage(name: $name, type: $type, available: ${calculateAvailableSpaces()}, score: $score)';
+    return 'Garage(name: $name, student spaces: $studentSpaces, Max Space: $studentMaxSpaces, lot max Space: $lotOtherMaxSpaces, lot Spaces: $lotOtherSpaces,type: $type, score: $score)';
   }
 }

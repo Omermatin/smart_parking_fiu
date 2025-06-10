@@ -257,7 +257,13 @@ class _HomepageState extends State<Homepage> {
       );
 
       if (result.isNotEmpty) {
-        _navigateToRecommendations(result, classJson);
+        _navigateToRecommendations(
+          result,
+          classJson,
+          userPosition,
+          enteredId,
+          buildingData,
+        );
       } else {
         _handleError("No parking recommendations available at this time");
       }
@@ -270,6 +276,9 @@ class _HomepageState extends State<Homepage> {
   void _navigateToRecommendations(
     List<Garage> recommendations,
     Map<String, dynamic> classJson,
+    Position userPosition,
+    String pantherId,
+    dynamic buildingData,
   ) {
     if (_isNavigating || !mounted) return;
 
@@ -283,6 +292,9 @@ class _HomepageState extends State<Homepage> {
             (context) => RecommendationsPage(
               recommendations: recommendations,
               fullScheduleJson: classJson,
+              userPosition: userPosition,
+              pantherId: pantherId,
+              buildingData: buildingData,
             ),
       ),
     ).then((_) {

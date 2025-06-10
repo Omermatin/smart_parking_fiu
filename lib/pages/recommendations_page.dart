@@ -17,11 +17,17 @@ import '../util/constants.dart';
 class RecommendationsPage extends StatefulWidget {
   final List<Garage> recommendations;
   final Map<String, dynamic> fullScheduleJson;
+  final Position userPosition;
+  final String pantherId;
+  final dynamic buildingData;
 
   const RecommendationsPage({
     super.key,
     required this.recommendations,
     required this.fullScheduleJson,
+    required this.userPosition,
+    required this.pantherId,
+    required this.buildingData,
   });
 
   @override
@@ -72,8 +78,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
         _currentRecommendations = resetToOriginalOrder(
           _originalRecommendations,
         );
-        debugPrint('✅ Sorted: $_currentRecommendations');
-        ;
       } else {
         _activeSort = sortType;
         switch (sortType) {
@@ -107,6 +111,13 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
     try {
       final stopwatch = Stopwatch()..start();
 
+      // PRESERVE current class if it's null
+      if (_currentClass == null || _currentClass!.pantherId.isEmpty) {
+        debugPrint('🔄 Current class missing, re-parsing...');
+        _currentClass = ClassScheduleParser.getCurrentOrUpcomingClass(
+          widget.fullScheduleJson,
+        );
+      }
       // Get fresh location
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -133,7 +144,8 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
         position.latitude,
         todaySchedule,
         parkingData,
-        BuildingCache.getBuildings(), // Use cached building data
+
+        widget.buildingData,
       );
 
       stopwatch.stop();

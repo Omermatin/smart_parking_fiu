@@ -96,6 +96,13 @@ Future<List<Garage>> getAIRecommendationsOptimized(
   dynamic parkingResults,
   dynamic buildingResults,
 ) async {
+  // debugPrint('pantherId: $pantherId');
+  // debugPrint('longitude: $longitude');
+  // debugPrint('latitude: $latitude');
+  // debugPrint('todaySchedule: ${todaySchedule.toString()}');
+  // debugPrint('parkingResults: $parkingResults');
+  // debugPrint('buildingResults: $buildingResults');
+
   try {
     debugPrint(
       '🚀 Starting getAIRecommendationsOptimized for student: $pantherId',
@@ -115,6 +122,16 @@ Future<List<Garage>> getAIRecommendationsOptimized(
 
     if (availableGarages.isEmpty) {
       debugPrint('❌ No garages with available spaces');
+      return [];
+    }
+
+    // Parse building data
+    debugPrint('🏢 Parsing buildings...');
+    final buildings = BuildingParser.parseBuildings(buildingResults);
+    debugPrint('✅ Parsed ${buildings.length} building entries');
+
+    if (buildings.isEmpty) {
+      debugPrint('❌ No buildings found');
       return [];
     }
 
@@ -248,10 +265,27 @@ Future<List<Garage>> getAIRecommendationsOptimized(
             final garage = Garage(
               name: garageData['name'],
               type: type,
-              studentMaxSpaces: maxSpaces,
-              availableSpaces: garageData['available_spaces'],
-              score: garageData['score']?.toDouble(),
-              lotOtherMaxSpaces: maxSpaces,
+              // studentMaxSpaces: maxSpaces,
+              // availableSpaces: garageData['available_spaces'],
+              // score: garageData['score']?.toDouble(),
+              // lotOtherMaxSpaces: maxSpaces,
+              studentSpaces:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.studentSpaces
+                      : null,
+              studentMaxSpaces:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.studentMaxSpaces
+                      : null,
+              lotOtherSpaces:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.lotOtherSpaces
+                      : 0,
+              lotOtherMaxSpaces:
+                  matchingGarage.name.isNotEmpty
+                      ? matchingGarage.lotOtherMaxSpaces
+                      : 0,
+
               // Include location data from matching garage
               latitude:
                   matchingGarage.name.isNotEmpty
