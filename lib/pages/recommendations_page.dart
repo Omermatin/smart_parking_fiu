@@ -215,7 +215,7 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
                           child: Row(
                             children: [
                               const Text(
-                                'AI-Powered Recommendations',
+                                'Recommendations',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,

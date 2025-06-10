@@ -77,21 +77,30 @@ class GarageListItem extends StatelessWidget {
                     ),
                   ),
                   // Availability Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$availableSpaces ${isLot ? "spaces" : "student spots"}',
+                        SizedBox(
+                  width: 166,
+                  child: RichText(
+                    textAlign: TextAlign.right,
+                    text: TextSpan(
                       style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
                       ),
+                      // children: [
+                      //   const TextSpan(text: 'Student Spaces: '),
+                      //   TextSpan(text: '${garage.availableSpaces}'),
+                      // ],
+                      children: [
+                        TextSpan(
+                          text:
+                              isLot
+                                  ? 'All Spaces: $availableSpaces'
+                                  : 'Student Spaces: $availableSpaces',
+                        ),
+                      ],
                     ),
+                  ),
                   ),
                 ],
               ),
