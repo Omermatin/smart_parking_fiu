@@ -9,6 +9,7 @@ import '../models/garage.dart';
 import '../util/logic.dart';
 import '../util/constants.dart';
 import '../util/error_handler.dart';
+import '../util/location_distance.dart';
 import 'recommendations_page.dart';
 
 class AppColors {
@@ -39,12 +40,11 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    // Initialize location service immediately
+
     LocationService.initializeUserLocation();
   }
 
   bool isValidPantherId(String id) {
-    // Panther ID must be exactly 7 digits
     return RegExp(r'^\d{7}$').hasMatch(id.trim());
   }
 
@@ -174,10 +174,7 @@ class _HomepageState extends State<Homepage> {
       _state = LoadingState.loading;
     });
 
-    debugPrint('🚀 Submit button pressed');
-
     if (!_formKey.currentState!.validate()) {
-      debugPrint('❌ Form validation failed');
       setState(() {
         _state = LoadingState.initial;
       });
@@ -185,11 +182,9 @@ class _HomepageState extends State<Homepage> {
     }
 
     final enteredId = idController.text.trim();
-    debugPrint('✅ Form validated. Student ID: $enteredId');
 
     try {
       // Start all async operations in parallel
-
       final futures = await Future.wait([
         LocationService.initializeUserLocation().then(
           (_) => LocationService.currentPosition,
@@ -212,32 +207,23 @@ class _HomepageState extends State<Homepage> {
         return;
       }
 
-      debugPrint(
-        '✅ Location available: ${userPosition.latitude}, ${userPosition.longitude}',
-      );
-
       // Validate class data
       if (classJson == null) {
         _handleError("Invalid Panther ID or no classes found");
         return;
       }
 
-      debugPrint('✅ Class schedule fetched successfully');
-
       // Initialize building cache if not already done
       if (buildingData != null && !BuildingCache.isInitialized) {
         BuildingCache.initialize(buildingData);
-        debugPrint('✅ Building cache initialized');
       }
 
       // Parse today's schedule
       final todaySchedule = ClassScheduleParser.getAllTodayClasses(classJson);
       if (todaySchedule.isEmpty) {
-        _handleError("You have no classes today! No need to park 😊");
+        _handleError("You have no classes today! No need to park ");
         return;
       }
-
-      debugPrint('📚 Found ${todaySchedule.length} classes for today');
 
       // Get AI-powered recommendations with already fetched data
       final recommendationsStopwatch = Stopwatch()..start();
@@ -252,9 +238,6 @@ class _HomepageState extends State<Homepage> {
       );
 
       recommendationsStopwatch.stop();
-      debugPrint(
-        '🤖 AI recommendations received in ${recommendationsStopwatch.elapsedMilliseconds}ms',
-      );
 
       if (result.isNotEmpty) {
         _navigateToRecommendations(
@@ -268,7 +251,7 @@ class _HomepageState extends State<Homepage> {
         _handleError("No parking recommendations available at this time");
       }
     } catch (e) {
-      debugPrint('💥 Error in validateAndFetchGarages: $e');
+      debugPrint('Error in validateAndFetchGarages: $e');
       _handleError(ErrorHandler.getUserFriendlyError(e));
     }
   }
@@ -283,7 +266,6 @@ class _HomepageState extends State<Homepage> {
     if (_isNavigating || !mounted) return;
 
     _isNavigating = true;
-    debugPrint('✅ Navigating to recommendations page');
 
     Navigator.push(
       context,

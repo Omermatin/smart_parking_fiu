@@ -9,17 +9,13 @@ class GarageParser {
       try {
         final garage = Garage.fromJson(entry);
 
-        // Only include garages with available spaces
         if (garage.hasAvailableSpaces()) {
           garages.add(garage);
         }
       } catch (e) {
-        debugPrint('⚠️ Error parsing garage: $e');
-        debugPrint('Entry data: $entry');
+        debugPrint('Error parsing garage: $e');
       }
     }
-
-    debugPrint('✅ Parsed ${garages.length} garages with available spaces');
     return garages;
   }
 }

@@ -15,7 +15,7 @@ Future<dynamic> fetchUsers(String studentsIds) async {
   final baseUrl = dotenv.env['API_URL_SCHEDULE'];
 
   if (baseUrl == null || dotenv.env['API_KEYSCHEDULE'] == null) {
-    debugPrint('❌ Missing API configuration for schedule');
+    debugPrint('Missing API configuration for schedule');
     return null;
   }
 
@@ -31,8 +31,6 @@ Future<dynamic> fetchUsers(String studentsIds) async {
             throw Exception('Schedule request timeout');
           },
         );
-
-    debugPrint('✅ Schedule API response: ${response.statusCode}');
 
     if (response.statusCode != 200) {
       debugPrint('Error fetching users: ${response.body}');
@@ -68,24 +66,20 @@ Future<dynamic> fetchParking() async {
           },
         );
 
-    debugPrint('✅ Parking API response: ${response.statusCode}');
-
     if (response.statusCode != 200) {
-      debugPrint('❌ Error fetching parking: ${response.body}');
+      debugPrint('Error fetching parking: ${response.body}');
       return null;
     }
 
     return await compute(jsonDecode, response.body);
   } catch (e) {
-    debugPrint('❌ Exception while fetching parking: $e');
+    debugPrint('Exception while fetching parking: $e');
     rethrow;
   }
 }
 
 Future<dynamic> fetchBuilding() async {
   final fullUrl = dotenv.env['API_URL_BUILDINGS'];
-
-  debugPrint('🏢 Fetching building data...');
 
   if (fullUrl == null) {
     throw Exception('API_URL_BUILDING not found in environment variables.');
@@ -101,21 +95,18 @@ Future<dynamic> fetchBuilding() async {
           },
         );
 
-    debugPrint('✅ Building API response: ${response.statusCode}');
-
     if (response.statusCode == 200) {
       return await compute(jsonDecode, response.body);
     } else {
-      debugPrint('❌ Error fetching buildings: ${response.body}');
+      debugPrint('Error fetching buildings: ${response.body}');
       return null;
     }
   } catch (e) {
-    debugPrint('❌ Exception while fetching buildings: $e');
+    debugPrint('Exception while fetching buildings: $e');
     rethrow;
   }
 }
 
-// Cleanup function to be called when app is disposed
 void disposeApiService() {
   _client.close();
 }

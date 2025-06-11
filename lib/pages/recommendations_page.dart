@@ -13,6 +13,8 @@ import '../widgets/buttons.dart';
 import '../services/api_service.dart';
 import '../util/error_handler.dart';
 import '../util/constants.dart';
+import '../util/custom_sort.dart';
+import '../util/location_distance.dart';
 
 class RecommendationsPage extends StatefulWidget {
   final List<Garage> recommendations;
@@ -113,7 +115,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
 
       // PRESERVE current class if it's null
       if (_currentClass == null || _currentClass!.pantherId.isEmpty) {
-        debugPrint('🔄 Current class missing, re-parsing...');
         _currentClass = ClassScheduleParser.getCurrentOrUpcomingClass(
           widget.fullScheduleJson,
         );
@@ -149,7 +150,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
       );
 
       stopwatch.stop();
-      debugPrint('🔄 Refresh completed in ${stopwatch.elapsedMilliseconds}ms');
 
       if (mounted) {
         setState(() {
@@ -158,7 +158,6 @@ class _RecommendationsPageState extends State<RecommendationsPage> {
           _calculateDistancesToClass();
           _isRefreshing = false;
 
-          // Reapply current sorting if any
           if (_activeSort.isNotEmpty) {
             _updateSorting(_activeSort);
           }

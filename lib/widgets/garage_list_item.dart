@@ -77,30 +77,30 @@ class GarageListItem extends StatelessWidget {
                     ),
                   ),
                   // Availability Badge
-                        SizedBox(
-                  width: 166,
-                  child: RichText(
-                    textAlign: TextAlign.right,
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.bold,
-                      ),
-                      // children: [
-                      //   const TextSpan(text: 'Student Spaces: '),
-                      //   TextSpan(text: '${garage.availableSpaces}'),
-                      // ],
-                      children: [
-                        TextSpan(
-                          text:
-                              isLot
-                                  ? 'All Spaces: $availableSpaces'
-                                  : 'Student Spaces: $availableSpaces',
+                  SizedBox(
+                    width: 166,
+                    child: RichText(
+                      textAlign: TextAlign.right,
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
+                        // children: [
+                        //   const TextSpan(text: 'Student Spaces: '),
+                        //   TextSpan(text: '${garage.availableSpaces}'),
+                        // ],
+                        children: [
+                          TextSpan(
+                            text:
+                                isLot
+                                    ? 'All Spaces: $availableSpaces'
+                                    : 'Student Spaces: $availableSpaces',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   ),
                 ],
               ),

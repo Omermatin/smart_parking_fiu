@@ -10,11 +10,9 @@ class BuildingCache {
 
   static void initialize(List<dynamic> buildingData) {
     if (_isInitialized) {
-      debugPrint('⚠️ Building cache already initialized, skipping...');
       return;
     }
 
-    debugPrint('🏢 Initializing building cache...');
     _buildings = BuildingParser.parseBuildings(buildingData);
 
     // Create a map for O(1) lookup by building code
@@ -24,14 +22,10 @@ class BuildingCache {
     }
 
     _isInitialized = true;
-    debugPrint(
-      '✅ Building cache initialized with ${_buildings.length} buildings',
-    );
   }
 
   static List<Building> getBuildings() {
     if (!_isInitialized) {
-      debugPrint('⚠️ Building cache not initialized');
       return [];
     }
     return List.unmodifiable(_buildings);
@@ -39,18 +33,15 @@ class BuildingCache {
 
   static Building? getBuildingByCode(String code) {
     if (!_isInitialized) {
-      debugPrint('⚠️ Building cache not initialized');
       return null;
     }
     return _buildingMap[code.toUpperCase()];
   }
 
-  // Clear cache if needed (e.g., for testing)
   static void clear() {
     _buildings.clear();
     _buildingMap.clear();
     _isInitialized = false;
-    debugPrint('🧹 Building cache cleared');
   }
 }
 

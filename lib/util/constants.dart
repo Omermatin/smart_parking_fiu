@@ -4,7 +4,7 @@ class AppConstants {
 
   // Network Constants
   static const Duration requestTimeout = Duration(seconds: 10);
-  static const Duration n8nRequestTimeout = Duration(seconds: 15);
+  static const Duration n8nRequestTimeout = Duration(seconds: 20);
   static const Duration locationTimeout = Duration(seconds: 5);
 
   // Retry Constants
