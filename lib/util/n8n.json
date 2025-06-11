@@ -16,10 +16,8 @@
     },
     {
       "parameters": {
-        "model": "=anthropic/claude-3.7-sonnet",
-        "options": {
-          "temperature": 0.3
-        }
+        "model": "meta-llama/llama-4-maverick",
+        "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
@@ -40,20 +38,20 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.3,
-      "position": [520, 80],
+      "position": [560, -240],
       "id": "32559f72-50ac-4c4c-97a9-73d848ec53df",
       "name": "Respond to Webhook1"
     },
     {
       "parameters": {
         "promptType": "=define",
-        "text": "=- Filter and return from best to worst: {{ JSON.stringify($json.body.student_location) }}\nYou can get the distances inside today_classes in distances_to_garages for each class building. \n- Request Time: {{ new Date().toLocaleString() }}\n \nToday's Schedule: {{ JSON.stringify($json.body.today_classes) }}\n \nAvailable Garages and Lots: {{ JSON.stringify($json.body.available_garages) }}\nBuilding Data: {{ JSON.stringify($json.body.buildings) }}",
+        "text": "=User location:{{ $json.body.student_location }}\n- Request Time: {{ new Date().toLocaleString() }}\n \nToday's Schedule: {{ JSON.stringify($json.body.today_classes) }}. \nAvailable Garages and Lots: {{ JSON.stringify($json.body.available_garages) }}\nBuilding Data: {{ JSON.stringify($json.body.buildings) }} ",
         "hasOutputParser": true,
         "messages": {
           "messageValues": [
             {
               "type": "HumanMessagePromptTemplate",
-              "message": "=#role\n \nYou are a parking assistant working for FIU’s parking. Your job is to recommend and rank the garages/lots from best to worst to help students find the most optimal parking.\n \n#Instructions\n \n1) Analyze the student’s classes gqven including start and end times.\n \n2. Use the `distance_to_garages` input to qnsqde {{ $json.body.today_classes }} to see how far each garage/lot is from each building where a class is held.\n \n4.Qf there are more than one classes,for each garage/lot, calculate the **total walking distance for the whole day**, considering all buildings where the student has in-person classes today.\n \n5. If a garage/lot has **less than 100 available spaces**, PUT AT BOTTOM it even if it’s close.\n \n6. Among those  GARAGES/LOTS with **100+ spaces**, prefer the garage/lot with the **lowest total walking distance** THe one thats closer.\n \n7. You must include **all garages and lots** from the input in the output — just ranked from best to worst.\n \n \n#rules\n \nDo not be biased towards garages or lots. If any garage or lot has more than 100 available spaces, prefer the one that is closest, even if another has more total available spaces.\n \n- Always use Eastern Daylight Time.\n \n- Do not invent or hallucinate any class data, garage data, or building data get every data from qnput.\n \n- Rank by: 1) proximity across all classes (lower total walking distance wins), 2) available spaces\n- Dont be\n \n- **Do not exclude any garages or lots.**\n \n- Return a valid JSON array. Do **not** include a trailing comma.\n \n- **No markdown, no explanation, no comments, no code blocks.**\n \n- Output must be strictly parsable by `JSON.parse()`.\n \n-  distance_to_garages is always more important than available spaces. LOWER distance  FROM CLASS THE BETTER\n \nA garage that is significantly farther must be ranked lower, even if it has more available spaces.\n \n\"You are a strict data processor. Only return fields that exist in the input.\n \n#example\n<example>\n \n[\n  {\n    \"name\": \"Garage Alpha\",\n    \"type\": \"garage\",\n    \"available_spaces\": 312,\n    \"max_spaces\": 500,\n  },\n \n  {\n    \"name\": \"Lot Bravo\",\n    \"type\": \"lot\",\n    \"available_spaces\": 144,\n    \"max_spaces\": 100,\n \n  },\n  {\n    \"name\": \"Garage Charlie\",\n    \"type\": \"garage\",\n    \"available_spaces\": 528,\n    \"max_spaces\": 10,\n  }\n]\n</example>"
+              "message": "=#role\n \nYou are a parking assistant working for FIU’s parking. Your job is to recommend and rank the garages/lots from best to worst to help students find the most optimal parking.\n \n#Instructions\n \n1) Analyze the student’s classes given including start and end times.\n \n2. Use the `distance_to_garages` input inside {{ $json.body.today_classes }} to see how far each garage/lot is from each building where a class is held.\n \n4.If there are more than one classes,for each garage/lot, calculate the **total walking distance for the whole day**, considering all buildings where the student has in-person classes today.\n \n5. If a garage/lot has **less than 100 available spaces**, PUT AT BOTTOM even if it’s close.\n \n6. Among those  GARAGES/LOTS with **100+ spaces**, prefer the garage/lot with the **lowest total walking distance** The one thats closer.\n \n7. You must include **all garages and lots** from the input in the output — just ranked from best to worst.\n \n \n#rules\n \nDo not be biased towards garages or lots. If any garage or lot has more than 100 available spaces, prefer the one that is closest, even if another has more total available spaces.\n \n- Always use Eastern Daylight Time.\n \n- Do not invent or hallucinate any class data, garage data, or building data get every data from qnput.\n \n- Rank by: 1) proximity across all classes (lower total walking distance wins), 2) available spaces\n \n- **Do not exclude any garages or lots.**\n-  You can get the distances inside today_classes in distances_to_garages for each class building.\n \n- Return a valid JSON array. Do **not** include a trailing comma.\n \n- **No markdown, no explanation, no comments, no code blocks.**\n \n- Output must be strictly parsable by `JSON.parse()`.\n \n-  distance_to_garages is always more important than available spaces. The LOWER the distance FROM CLASS THE BETTER\n \nA garage that is significantly farther must be ranked lower, even if it has more available spaces.\n \nYou are a strict data processor. Only return fields that exist in the input.\n \n#example\n<example>\n \n[\n  {\n    \"name\": \"Garage Omer\",\n    \"type\": \"garage\",\n    \"available_spaces\": 312,\n    \"max_spaces\": 500,\n  },\n \n  {\n    \"name\": \"Lot Ousman\",\n    \"type\": \"lot\",\n    \"available_spaces\": 144,\n    \"max_spaces\": 100,\n \n  },\n  {\n    \"name\": \"Garage Charlie\",\n    \"type\": \"garage\",\n    \"available_spaces\": 528,\n    \"max_spaces\": 10,\n  }\n]\n</example>"
             }
           ]
         },
@@ -74,7 +72,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [580, -300],
+      "position": [300, -260],
       "id": "4731ec74-c640-40c8-8353-db1f45d9a2e2",
       "name": "Code"
     }

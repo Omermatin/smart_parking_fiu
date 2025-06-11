@@ -87,10 +87,7 @@ class GarageListItem extends StatelessWidget {
                           color: Colors.grey[600],
                           fontWeight: FontWeight.bold,
                         ),
-                        // children: [
-                        //   const TextSpan(text: 'Student Spaces: '),
-                        //   TextSpan(text: '${garage.availableSpaces}'),
-                        // ],
+
                         children: [
                           TextSpan(
                             text:
@@ -108,25 +105,41 @@ class GarageListItem extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Distance Information
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (garage.distanceToClass != null) ...[
-                    Icon(Icons.school, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      formatDistance(garage.distanceToClass),
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  if (garage.distanceToClass != null)
+                    Row(
+                      children: [
+                        Icon(Icons.school, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          "From class: ${formatDistance(garage.distanceToClass)}",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                  ],
-                  if (garage.distanceFromOrigin != null) ...[
-                    Icon(Icons.my_location, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      formatDistance(garage.distanceFromOrigin),
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  if (garage.distanceFromOrigin != null)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.my_location,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "From you: ${formatDistance(garage.distanceFromOrigin)}",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
                 ],
               ),
 
