@@ -5,10 +5,9 @@ import 'pages/homepage.dart';
 Future<void> main() async {
   // Initialize Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
-  // Load environment variables
+
   await dotenv.load();
 
-  // Run the app
   runApp(const MyApp());
 }
 

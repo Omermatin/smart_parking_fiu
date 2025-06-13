@@ -15,7 +15,6 @@ class BuildingCache {
 
     _buildings = BuildingParser.parseBuildings(buildingData);
 
-    // Create a map for O(1) lookup by building code
     _buildingMap.clear();
     for (final building in _buildings) {
       _buildingMap[building.name.toUpperCase()] = building;
@@ -70,7 +69,6 @@ class BuildingParser {
   }
 }
 
-// Global helper function for backward compatibility
 Building? getBuildingByCode(String buildingCode) {
   return BuildingCache.getBuildingByCode(buildingCode);
 }

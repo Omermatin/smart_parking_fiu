@@ -37,8 +37,6 @@ class ErrorHandler {
   ]) {
     final timestamp = DateTime.now().toIso8601String();
     print('[$timestamp] Error in $context: $error');
-    if (stackTrace != null) {
-      print('Stack trace: $stackTrace');
-    }
+    if (stackTrace != null) {}
   }
 }

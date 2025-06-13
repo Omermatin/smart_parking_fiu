@@ -9,7 +9,6 @@ import '../util/building_parser.dart';
 import '../util/constants.dart';
 import '../util/location_distance.dart';
 
-// Optimized function that takes already fetched data
 Future<List<Garage>> getAIRecommendationsOptimized(
   String pantherId,
   double longitude,
