@@ -8,54 +8,22 @@ Problem Statement
 
 Students at FIU often face difficulty finding available parking close to their classes, leading to:
 
-Late arrivals
+1) Late arrivals
 
-Increased walking distance across campus
+2) Increased walking distance across campus
 
-Frustration and inefficiency
+3) Frustration and inefficiency
 
-The goal of this project is to automate parking selection using a schedule-aware recommendation algorithm, prioritizing convenience and real-time availability.
+The goal of this project is to automate parking selection using a schedule-aware recommendation algorithm using n8n for smart suggestions, prioritizing convenience and real-time availability.
 
-Key Features
+Technical Highlights:
 
-Schedule-Aware Recommendations
+  Flutter & Dart: Frontend interface with state management and responsive design
 
-Inputs: Student class schedule (term, courses, meeting times, building locations)
+  REST API Integration: Fetches student schedule and garage availability
 
-Logic: Calculates optimal parking garage based on proximity to first class of the day and class timings throughout the day.
+  Local Algorithmic Processing: All recommendation logic is handled on-device; no backend server required
 
-Real-Time Garage Data Integration
+  Data Parsing & Modeling: JSON responses are mapped to custom Dart data models
 
-Consumes API data for all FIU garages, including:
-
-Garage type (garage vs. lot)
-
-Current student/other vehicle occupancy
-
-Latitude/longitude coordinates
-
-Intelligent Parking Algorithm
-
-Filters only “garage” type entries
-
-Prioritizes garages with available student spaces
-
-Handles multi-class days to suggest parking that minimizes walking across multiple buildings
-
-Flutter-Based UI
-
-Clean and responsive interface
-
-Allows students to view garage recommendations in real-time
-
-Technical Highlights
-
-Flutter & Dart: Frontend interface with state management and responsive design
-
-REST API Integration: Fetches student schedule and garage availability
-
-Local Algorithmic Processing: All recommendation logic is handled on-device; no backend server required
-
-Data Parsing & Modeling: JSON responses are mapped to custom Dart data models
-
-Scalable Architecture: Easily extendable to include new features like parking history, AI-based predictions, and alternative routes
+  Scalable Architecture: Easily extendable to include new features like parking history, AI-based predictions, and alternative routes
